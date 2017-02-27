@@ -12,16 +12,9 @@ import java.util.Set;
 @Entity
 public class User {
 
-    @OneToMany(mappedBy = "user")
-    private Set<Password> passwords = new HashSet<>();
-
     @Id
     @GeneratedValue
     private Long id;
-
-    public Set<Password> getPasswords() {
-        return passwords;
-    }
 
     public Long getId() {
         return id;
@@ -38,6 +31,13 @@ public class User {
     @JsonIgnore
     public String password;
     public String username;
+
+    @OneToMany(mappedBy = "user")
+    private Set<Password> passwords = new HashSet<>();
+
+    public Set<Password> getPasswords() {
+        return passwords;
+    }
 
     public User(String name, String password) {
         this.username = name;

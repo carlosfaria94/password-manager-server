@@ -40,4 +40,4 @@ API Base URL: `http://localhost:8080`
 
 | HTTP Verb     | /{username}/passwords/retrievePassword | Body | Returns|
 | ------------- |---------------------|-----------|--------|
-| POST           | Retrieve a specific password associated to the user | publicKey, domain, username | `200`|
+| POST           | Retrieve a specific password associated to the user | publicKey, domain, username | `200` - Returns only the password |

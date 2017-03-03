@@ -35,4 +35,4 @@ API Base URL: `http://localhost:8080`
 
 | HTTP Verb     | /password | Body | Returns|
 | ------------- |---------------------|-----------|--------|
-| GET           | Retrieve a specific password associated to the user | publicKey, domain, username | `200` - Returns only the password |
+| GET           | Retrieve a specific password associated to the user | publicKey, domain, username | `200` - Password, Digest |

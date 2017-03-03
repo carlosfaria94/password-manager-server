@@ -22,22 +22,17 @@ API Base URL: `http://localhost:8080`
 
 ### User
 
-| HTTP Verb     | /{PubKeyFingerprint} | Body | Returns|
+| HTTP Verb     | / | Body | Returns|
 | ------------- |---------------------|------|--------|
-| GET           | Get user information and passwords |  | `200`|
 | POST          | Register a new user | publicKey | `201`|
 
 ### Password Manager
 
-| HTTP Verb     | /{PubKeyFingerprint}/passwords | Body | Returns|
+| HTTP Verb     | /password | Body | Returns|
 | ------------- |---------------------|------|--------|
-| GET           | List all the user passwords |  | `200`|
-| POST          | Create a new password associated to the user or update existing one | publicKey, tuple(domain, username, password), HMAC | `201`|
+| PUT          | Create a new password associated to the user or update existing one | publicKey, domain, username, password, digest(concat(domain,username,password)) | `201`|
 
-| HTTP Verb     | /{PubKeyFingerprint}/passwords/{passwordId} | Returns|
-| ------------- |---------------------|--------|
-| GET           | Get a specific password (`passwordId`) associated to the user | `200`|
 
-| HTTP Verb     | /{PubKeyFingerprint}/passwords/retrievePassword | Body | Returns|
+| HTTP Verb     | /password | Body | Returns|
 | ------------- |---------------------|-----------|--------|
-| POST           | Retrieve a specific password associated to the user | publicKey, domain, username | `200` - Returns only the password |
+| GET           | Retrieve a specific password associated to the user | publicKey, domain, username | `200` - Returns only the password |

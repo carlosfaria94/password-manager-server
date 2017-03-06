@@ -31,10 +31,6 @@ API Base URL: `http://localhost:8080`
 | HTTP Verb     | /password | Body | Returns|
 | ------------- |---------------------|------|--------|
 | PUT          | Create a new password associated to the user or update existing one | publicKey, domain, username, password, digest(concat(domain,username,password)) | `201`|
-
-
-| HTTP Verb     | /password | Body | Returns|
-| ------------- |---------------------|-----------|--------|
 | GET           | Retrieve a specific password associated to the user | publicKey, domain, username | `200` - Password, Digest |
 
 All the messages are authenticated, fresh and non repudiable.

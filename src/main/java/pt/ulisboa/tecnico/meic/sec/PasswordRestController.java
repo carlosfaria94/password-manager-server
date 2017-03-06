@@ -9,7 +9,7 @@ import java.net.URI;
 import java.util.Collection;
 
 @RestController
-@RequestMapping("/{username}/passwords")
+@RequestMapping("/password")
 class PasswordRestController {
 
     private final PasswordRepository passwordRepository;
@@ -24,17 +24,17 @@ class PasswordRestController {
     }
 
     @RequestMapping(method = RequestMethod.GET)
-    Collection<Password> readPasswords(@PathVariable String username) {
-        this.validateUser(username);
-        return this.passwordRepository.findByUserUsername(username);
+    Collection<Password> readPasswords(@RequestBody String publicKey) {
+        this.validateUser(publicKey);
+        return this.passwordRepository.findByUserPublicKey(publicKey);
     }
 
-    @RequestMapping(method = RequestMethod.POST)
-    ResponseEntity<?> addPassword(@PathVariable String username, @RequestBody Password input) {
-        this.validateUser(username);
+    @RequestMapping(method = RequestMethod.PUT)
+    ResponseEntity<?> addPassword(@PathVariable String publicKey, @RequestBody Password input) {
+        this.validateUser(publicKey);
 
         return this.userRepository
-                .findByUsername(username)
+                .findByPublicKey(publicKey)
                 .map(user -> {
                     Password result = passwordRepository.save(new Password(user,
                             input.domain, input.username, input.password));
@@ -49,14 +49,8 @@ class PasswordRestController {
 
     }
 
-    @RequestMapping(method = RequestMethod.GET, value = "/{passwordId}")
-    Password readPassword(@PathVariable String username, @PathVariable Long passwordId) {
-        this.validateUser(username);
-        return this.passwordRepository.findOne(passwordId);
-    }
-
-    private void validateUser(String username) {
-        this.userRepository.findByUsername(username).orElseThrow(
-                () -> new UserNotFoundException(username));
+    private void validateUser(String publicKey) {
+        this.userRepository.findByPublicKey(publicKey).orElseThrow(
+                () -> new UserNotFoundException());
     }
 }

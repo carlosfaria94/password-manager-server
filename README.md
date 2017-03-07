@@ -7,9 +7,13 @@ Implementation of a distributed password manager server with dependability guara
 
 A REST service API implemented using Spring Framework.
 
-The data is persisted in memory using [H2](http://h2database.com/html/main.html).
+The data is persisted in MySQL.
 
 ## Running
+
+##### Set this environment variables:
+
+`MYSQL_DB_PASSWORD` - MySQL user password
 
 ```
 mvn install

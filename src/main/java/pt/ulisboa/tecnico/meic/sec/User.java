@@ -1,9 +1,6 @@
 package pt.ulisboa.tecnico.meic.sec;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -12,14 +9,17 @@ public class User {
 
     @Id
     @GeneratedValue
-    private Long id;
+    private Integer id;
 
+    public String fingerprint;
+
+    @Transient
     public String publicKey;
 
     @OneToMany(mappedBy = "user")
     private Set<Password> passwords = new HashSet<>();
 
-    public Long getId() {
+    public Integer getId() {
         return id;
     }
 
@@ -27,8 +27,8 @@ public class User {
         return passwords;
     }
 
-    public User(String publicKey) {
-        this.publicKey = publicKey;
+    public User(String fingerprint) {
+        this.fingerprint = fingerprint;
     }
 
     User() { // jpa only

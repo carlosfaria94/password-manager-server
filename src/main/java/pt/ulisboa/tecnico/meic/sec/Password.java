@@ -16,7 +16,7 @@ public class Password {
 
     @Id
     @GeneratedValue
-    private Long id;
+    private Integer id;
 
     Password() { // jpa only
     }
@@ -36,31 +36,7 @@ public class Password {
         return user;
     }
 
-    public Long getId() {
+    public Integer getId() {
         return id;
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public void setDomain(String domain) {
-        this.domain = domain;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 }

@@ -40,7 +40,6 @@ class PasswordRestController {
     @RequestMapping(value = "/password", method = RequestMethod.PUT)
     ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException {
 
-        if (input.publicKey.equals(null)) return new ResponseEntity<>(null, null, HttpStatus.BAD_REQUEST);
         String fingerprint = this.validateUser(input.publicKey);
 
         return this.userRepository

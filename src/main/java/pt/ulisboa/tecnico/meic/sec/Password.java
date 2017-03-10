@@ -2,10 +2,8 @@ package pt.ulisboa.tecnico.meic.sec;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
+import javax.persistence.*;
+import java.sql.Timestamp;
 
 @Entity
 public class Password {
@@ -21,16 +19,24 @@ public class Password {
     Password() { // jpa only
     }
 
-    public Password(User user, String domain, String username, String password) {
+    public Password(User user, String domain, String username, String password, String digest, Timestamp registered) {
         this.domain = domain;
         this.username = username;
         this.password = password;
         this.user = user;
+        this.digest = digest;
+        this.registered = registered;
     }
+
+
+    @Transient
+    public String publicKey;
 
     public String domain;
     public String username;
     public String password;
+    public String digest;
+    public Timestamp registered;
 
     public User getUser() {
         return user;
@@ -38,5 +44,19 @@ public class Password {
 
     public Integer getId() {
         return id;
+    }
+
+    @Override
+    public String toString() {
+        return "Password{" +
+                "user=" + user +
+                ", id=" + id +
+                ", publicKey='" + publicKey + '\'' +
+                ", domain='" + domain + '\'' +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", digest='" + digest + '\'' +
+                ", registered=" + registered +
+                '}';
     }
 }

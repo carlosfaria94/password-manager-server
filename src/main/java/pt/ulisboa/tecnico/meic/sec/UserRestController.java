@@ -25,16 +25,24 @@ class UserRestController {
      * @return user created and HTTP CREATED code
      */
     @RequestMapping(method = RequestMethod.POST)
-    ResponseEntity<?> registerUser(@RequestBody User input) throws NoSuchAlgorithmException {
-        // TODO: Verificar se a public key é submetida
+    ResponseEntity<?> registerUser(@RequestBody User input) throws NoSuchAlgorithmException, NullPointerException {
         Security sec = new Security();
         String fingerprint = sec.generateFingerprint(input.publicKey);
 
-        User newUser = userRepository.save(new User(fingerprint));
-        return new ResponseEntity<>(newUser, null, HttpStatus.CREATED);
+        if (!userRepository.findByFingerprint(fingerprint).isPresent()) {
+            User newUser = userRepository.save(new User(fingerprint));
+            return new ResponseEntity<>(newUser, null, HttpStatus.CREATED);
+        }
+        return new ResponseEntity<>(null, null, HttpStatus.CONFLICT);
     }
 
-    @ResponseStatus(value= HttpStatus.INTERNAL_SERVER_ERROR, reason="Cryptographic algorithm is not available.")
+    @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Something is missing.")
+    @ExceptionHandler({NullPointerException.class})
+    public void nullException() {
+        // Nothing to do
+    }
+
+    @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Cryptographic algorithm is not available.")
     @ExceptionHandler({NoSuchAlgorithmException.class})
     public void noAlgorithm() {
         // Nothing to do

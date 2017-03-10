@@ -33,4 +33,14 @@ public class User {
 
     User() { // jpa only
     }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", fingerprint='" + fingerprint + '\'' +
+                ", publicKey='" + publicKey + '\'' +
+                ", passwords=" + passwords +
+                '}';
+    }
 }

@@ -4,14 +4,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
+import java.sql.Timestamp;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("/password")
 class PasswordRestController {
 
     private final PasswordRepository passwordRepository;
@@ -25,48 +23,66 @@ class PasswordRestController {
         this.userRepository = userRepository;
     }
 
-    @RequestMapping(method = RequestMethod.POST)
-    Collection<Password> readPassword(@RequestBody String publicKey,
-                                      @RequestBody String domain,
-                                      @RequestBody String username) throws NoSuchAlgorithmException {
-        Security sec = new Security();
-        String fingerprint = sec.generateFingerprint(publicKey);
-        this.validateUser(fingerprint);
+    @RequestMapping(value = "/retrievePassword", method = RequestMethod.POST)
+    ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException {
+        this.validateUser(input.publicKey);
 
-        System.out.println(domain + username);
-
-        return this.passwordRepository.findByUserFingerprint(fingerprint);
+        // TODO: If 2 identical <domain,username> exist, this will not work fine.
+        // TODO: Can't exist 2 or more identical <domain, username> in server
+        Optional<Password> pwd = this.passwordRepository.findByDomainAndUsername(input.domain, input.username);
+        if (pwd.isPresent()) {
+            return new ResponseEntity<>(pwd.get(), null, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
+        }
     }
 
-    @RequestMapping(method = RequestMethod.PUT)
-    ResponseEntity<?> addPassword(@PathVariable String publicKey, @RequestBody Password input) {
+    @RequestMapping(value = "/password", method = RequestMethod.PUT)
+    ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException {
 
-        // TODO: Pegar na public key e gerar o fingerprint
-        String fingerprint = "tt";
+        if (input.publicKey.equals(null)) return new ResponseEntity<>(null, null, HttpStatus.BAD_REQUEST);
+        String fingerprint = this.validateUser(input.publicKey);
 
-        this.validateUser(fingerprint);
         return this.userRepository
                 .findByFingerprint(fingerprint)
                 .map(user -> {
-                    Password result = passwordRepository.save(new Password(user,
-                            input.domain, input.username, input.password));
+                    // TODO: If <domain,username> already exist, update.
 
-                    URI location = ServletUriComponentsBuilder
-                            .fromCurrentRequest().path("/{id}")
-                            .buildAndExpand(result.getId()).toUri();
+                    Timestamp now = new Timestamp(System.currentTimeMillis());
 
-                    return ResponseEntity.created(location).build();
+                    Password newPwd = passwordRepository.save(new Password(user,
+                            input.domain, input.username, input.password, input.digest, now));
+
+                    System.out.println(now.toString() + ": New password registered. ID: " + newPwd.getId());
+
+                    return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
                 })
                 .orElse(ResponseEntity.noContent().build());
 
     }
 
-    private void validateUser(String fingerprint) {
+    /**
+     * Only verify if user is already registered
+     *
+     * @param publicKey
+     * @return fingerprint
+     * @throws NoSuchAlgorithmException
+     */
+    private String validateUser(String publicKey) throws NoSuchAlgorithmException {
+        Security sec = new Security();
+        String fingerprint = sec.generateFingerprint(publicKey);
         this.userRepository.findByFingerprint(fingerprint).orElseThrow(
                 () -> new UserNotFoundException());
+        return fingerprint;
     }
 
-    @ResponseStatus(value= HttpStatus.INTERNAL_SERVER_ERROR, reason="Cryptographic algorithm is not available.")
+    @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Something is missing.")
+    @ExceptionHandler({NullPointerException.class})
+    public void nullException() {
+        // Nothing to do
+    }
+
+    @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Cryptographic algorithm is not available.")
     @ExceptionHandler({NoSuchAlgorithmException.class})
     public void noAlgorithm() {
         // Nothing to do

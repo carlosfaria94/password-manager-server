@@ -64,7 +64,10 @@ public class Password {
                 ", domain='" + domain + '\'' +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
-                ", digest='" + digest + '\'' +
+                ", pwdSignature='" + pwdSignature + '\'' +
+                ", nonce='" + nonce + '\'' +
+                ", timestamp='" + timestamp + '\'' +
+                ", reqSignature='" + reqSignature + '\'' +
                 ", registered=" + registered +
                 '}';
     }

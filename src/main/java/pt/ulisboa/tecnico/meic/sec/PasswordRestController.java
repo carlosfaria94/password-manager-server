@@ -9,7 +9,10 @@ import pt.ulisboa.tecnico.meic.sec.exception.ExpiredTimestampException;
 import pt.ulisboa.tecnico.meic.sec.exception.InvalidPasswordSignatureException;
 import pt.ulisboa.tecnico.meic.sec.exception.InvalidRequestSignatureException;
 
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
 import java.sql.Timestamp;
 import java.util.Optional;
 
@@ -30,7 +33,7 @@ class PasswordRestController {
     }
 
     @RequestMapping(value = "/retrievePassword", method = RequestMethod.POST)
-    ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException {
+    ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException {
         this.validateUser(input.publicKey);
         this.validatePasswordSignature(input);
 
@@ -45,7 +48,7 @@ class PasswordRestController {
     }
 
     @RequestMapping(value = "/password", method = RequestMethod.PUT)
-    ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException {
+    ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException {
 
         String fingerprint = this.validateUser(input.publicKey);
         this.validatePasswordSignature(input);
@@ -57,9 +60,8 @@ class PasswordRestController {
 
                     Timestamp now = new Timestamp(System.currentTimeMillis());
 
-                    //FIXME
                     Password newPwd = passwordRepository.save(new Password(user,
-                            input.domain, input.username, input.password, input.pwdSignature, now));
+                            input.domain, input.username, input.password, input.pwdSignature, now, input.timestamp, input.nonce, input.reqSignature));
 
                     System.out.println(now.toString() + ": New password registered. ID: " + newPwd.getId());
 
@@ -90,7 +92,7 @@ class PasswordRestController {
      * @return void
      * @throws NoSuchAlgorithmException
      */
-    private void validatePasswordSignature(Password password) throws DuplicateRequestException, ExpiredTimestampException, NoSuchAlgorithmException {
+    private void validatePasswordSignature(Password password) throws DuplicateRequestException, ExpiredTimestampException, NoSuchAlgorithmException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException {
         sec.verifyPasswordSignature(password);
     }
 

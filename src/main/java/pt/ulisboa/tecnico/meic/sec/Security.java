@@ -10,6 +10,7 @@ import java.security.*;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.sql.*;
 import java.time.Instant;
 import java.util.HashMap;
 
@@ -23,26 +24,26 @@ public class Security {
         return cryptoManager.convertBinaryToBase64(cryptoManager.digest(pubKey));
     }
 
-    private void verifyRequest(String nonce, Instant timestamp, String publicKey) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException {
+    private void verifyRequest(String nonce, String timestamp, String publicKey) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException {
         //TODO FIXME XXX Erro semântico??
         //Avoids replay attack
-        if(Instant.now().isAfter(timestamp.plusSeconds(30))){
+        if(!cryptoManager.isTimestampAndNonceValid(java.sql.Timestamp.valueOf(timestamp),
+                cryptoManager.convertBase64ToBinary(nonce))){
             throw new ExpiredTimestampException();
         }
-
-        //Avoids replay attack
+        /*//Avoids replay attack
         String n = nonce + generateFingerprint(publicKey);
         if(nounces.containsKey(n)){
             throw new DuplicateRequestException();
         }
 
-        nounces.put(n, true);
+        nounces.put(n, true);*/
     }
 
     public void verifyPasswordSignature(Password password) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidPasswordSignatureException, InvalidRequestSignatureException {
         verifyRequest(password.nonce, password.timestamp, password.publicKey);
 
-        //Verificar assinaturas dos campos em base64 ou bytes??
+        /*//Verificar assinaturas dos campos em base64 ou bytes??
         PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey)));
         String passwordEntry = password.domain + password.username + password.password;
         String request = password.pwdSignature + password.timestamp + password.nonce;
@@ -53,6 +54,6 @@ public class Security {
 
         if(!cryptoManager.verifyDigitalSignature(password.pwdSignature.getBytes(), passwordEntry.getBytes(), publicKey)){
             throw new InvalidPasswordSignatureException();
-        }
+        }*/
     }
 }

@@ -7,7 +7,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 
 @Entity
-public class Password {
+public class    Password {
 
     @JsonIgnore
     @ManyToOne
@@ -20,7 +20,7 @@ public class Password {
     Password() { // jpa only
     }
 
-    public Password(User user, String domain, String username, String password, String pwdSignature, Timestamp registered, Instant timestamp, String nonce, String reqSignature) {
+    public Password(User user, String domain, String username, String password, String pwdSignature, Timestamp registered, String timestamp, String nonce, String reqSignature) {
         this.domain = domain;
         this.username = username;
         this.password = password;
@@ -42,7 +42,7 @@ public class Password {
     public String pwdSignature;
     public Timestamp registered;
 
-    public Instant timestamp;
+    public String timestamp;
     public String nonce;
     public String reqSignature;
 

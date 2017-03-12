@@ -5,7 +5,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 
 @RestController
 @RequestMapping("/")
@@ -25,8 +28,8 @@ class UserRestController {
      * @return user created and HTTP CREATED code
      */
     @RequestMapping(method = RequestMethod.POST)
-    ResponseEntity<?> registerUser(@RequestBody User input) throws NoSuchAlgorithmException, NullPointerException {
-        Security sec = new Security();
+    ResponseEntity<?> registerUser(@RequestBody User input) throws NoSuchAlgorithmException, NullPointerException, CertificateException, KeyStoreException, IOException {
+        Security sec = new Security("keystore.jceks", "batata".toCharArray()); //same as password controller
         String fingerprint = sec.generateFingerprint(input.publicKey);
 
         if (!userRepository.findByFingerprint(fingerprint).isPresent()) {

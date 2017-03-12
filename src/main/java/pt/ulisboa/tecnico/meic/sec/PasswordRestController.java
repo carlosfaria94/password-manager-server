@@ -9,9 +9,9 @@ import pt.ulisboa.tecnico.meic.sec.exception.ExpiredTimestampException;
 import pt.ulisboa.tecnico.meic.sec.exception.InvalidPasswordSignatureException;
 import pt.ulisboa.tecnico.meic.sec.exception.InvalidRequestSignatureException;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
+import java.io.IOException;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.sql.Timestamp;
 import java.util.Optional;
@@ -22,18 +22,23 @@ class PasswordRestController {
     private final PasswordRepository passwordRepository;
 
     private final UserRepository userRepository;
+    private final String keystorePath; // static para serem init na main??
+    private final String keystorePwd;
 
-    private Security sec = new Security();
+    private Security sec;
 
     @Autowired
     PasswordRestController(PasswordRepository passwordRepository,
-                           UserRepository userRepository) {
+                           UserRepository userRepository) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
         this.passwordRepository = passwordRepository;
         this.userRepository = userRepository;
+        keystorePath = "keystore.jceks";
+        keystorePwd = "batata";
+        sec = new Security(keystorePath, keystorePwd.toCharArray());
     }
 
     @RequestMapping(value = "/retrievePassword", method = RequestMethod.POST)
-    ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException {
+    ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         this.validateUser(input.publicKey);
         this.validatePasswordSignature(input);
 
@@ -41,11 +46,13 @@ class PasswordRestController {
         // TODO: Can't exist 2 or more identical <domain, username> in server
         Optional<Password> pwd = this.passwordRepository.findByDomainAndUsername(input.domain, input.username);
         if (pwd.isPresent()) {
-            return new ResponseEntity<>(pwd.get(), null, HttpStatus.OK);
+            Password p = sec.getPasswordReadyToSend(pwd.get());
+            return new ResponseEntity<>(p, null, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
         }
     }
+
 
     @RequestMapping(value = "/password", method = RequestMethod.PUT)
     ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException {

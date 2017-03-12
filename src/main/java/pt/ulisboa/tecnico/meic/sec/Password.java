@@ -7,7 +7,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 
 @Entity
-public class    Password {
+public class Password {
 
     @JsonIgnore
     @ManyToOne
@@ -42,8 +42,11 @@ public class    Password {
     public String pwdSignature;
     public Timestamp registered;
 
+    @Transient
     public String timestamp;
+    @Transient
     public String nonce;
+    @Transient
     public String reqSignature;
 
     public User getUser() {

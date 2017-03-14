@@ -12,6 +12,7 @@ public class User {
     private Integer id;
 
     public String fingerprint;
+    public String signature;
 
     @Transient
     public String publicKey;

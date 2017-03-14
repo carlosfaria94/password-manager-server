@@ -16,10 +16,12 @@ import java.util.HashMap;
 class Security {
 
     private CryptoManager cryptoManager;
+    private HashMap<String, Boolean> nounces;
     private KeyStore keyStore;
 
     Security(String keystorePath, char[] keystorePwd) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
         this.cryptoManager = new CryptoManager();
+        this.nounces = new HashMap<>();
         keyStore = CryptoUtilities.readKeystoreFile(keystorePath, keystorePwd);
     }
 
@@ -54,13 +56,14 @@ class Security {
     private void verifyRequest(String nonce, String timestamp, String publicKey) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException {
         //TODO FIXME XXX Erro semântico??
         //Avoids replay attack
-        if(!cryptoManager.isTimestampAndNonceValid(java.sql.Timestamp.valueOf(timestamp),
+            if(!cryptoManager.isTimestampAndNonceValid(java.sql.Timestamp.valueOf(timestamp),
                 cryptoManager.convertBase64ToBinary(nonce))){
             throw new ExpiredTimestampException();
         }
     }
 
-    void verifyPasswordSignature(Password password) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidPasswordSignatureException, InvalidRequestSignatureException {
+    void verifyPasswordInsertSignature(Password password) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidPasswordSignatureException, InvalidRequestSignatureException {
+        verifyRequest(password.nonce, password.timestamp, password.publicKey);
 
         PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey)));
 
@@ -73,7 +76,25 @@ class Security {
                 password.nonce};
 
         cryptoManager.isValidSig(publicKey, myFields, password.reqSignature);
+    }
+
+    void verifyPasswordFetchSignature(Password password) throws DuplicateRequestException, NoSuchAlgorithmException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException {
         verifyRequest(password.nonce, password.timestamp, password.publicKey);
 
+        PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey)));
+
+
+        String[] myFields = new String[]{password.publicKey,
+                password.domain,
+                password.username,
+                password.timestamp,
+                password.nonce};
+
+        cryptoManager.isValidSig(publicKey, myFields, password.reqSignature);
+    }
+
+    void verifyPublicKeySignature(User user) throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException {
+        PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(user.publicKey)));
+        cryptoManager.isValidSig(publicKey, new String[]{user.publicKey}, user.publicKey);
     }
 }

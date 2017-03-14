@@ -56,20 +56,14 @@ class Security {
     private void verifyRequest(String nonce, String timestamp, String publicKey) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException {
         //TODO FIXME XXX Erro semântico??
         //Avoids replay attack
-        if(!cryptoManager.isTimestampAndNonceValid(java.sql.Timestamp.valueOf(timestamp),
+            if(!cryptoManager.isTimestampAndNonceValid(java.sql.Timestamp.valueOf(timestamp),
                 cryptoManager.convertBase64ToBinary(nonce))){
             throw new ExpiredTimestampException();
         }
-        /*//Avoids replay attack
-        String n = nonce + generateFingerprint(publicKey);
-        if(nounces.containsKey(n)){
-            throw new DuplicateRequestException();
-        }
-
-        nounces.put(n, true);*/
     }
 
-    void verifyPasswordSignature(Password password) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidPasswordSignatureException, InvalidRequestSignatureException {
+    void verifyPasswordInsertSignature(Password password) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidPasswordSignatureException, InvalidRequestSignatureException {
+        verifyRequest(password.nonce, password.timestamp, password.publicKey);
 
         PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey)));
 
@@ -82,19 +76,20 @@ class Security {
                 password.nonce};
 
         cryptoManager.isValidSig(publicKey, myFields, password.reqSignature);
+    }
+
+    void verifyPasswordFetchSignature(Password password) throws DuplicateRequestException, NoSuchAlgorithmException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException {
         verifyRequest(password.nonce, password.timestamp, password.publicKey);
 
-        /*//Verificar assinaturas dos campos em base64 ou bytes??
         PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey)));
-        String passwordEntry = password.domain + password.username + password.password;
-        String request = password.pwdSignature + password.timestamp + password.nonce;
 
-        if(!cryptoManager.verifyDigitalSignature(password.reqSignature.getBytes(), request.getBytes(), publicKey)){
-            throw new InvalidRequestSignatureException();
-        }
 
-        if(!cryptoManager.verifyDigitalSignature(password.pwdSignature.getBytes(), passwordEntry.getBytes(), publicKey)){
-            throw new InvalidPasswordSignatureException();
-        }*/
+        String[] myFields = new String[]{password.publicKey,
+                password.domain,
+                password.username,
+                password.timestamp,
+                password.nonce};
+
+        cryptoManager.isValidSig(publicKey, myFields, password.reqSignature);
     }
 }

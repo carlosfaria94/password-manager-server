@@ -40,7 +40,7 @@ class PasswordRestController {
     @RequestMapping(value = "/retrievePassword", method = RequestMethod.POST)
     ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         this.validateUser(input.publicKey);
-        this.validatePasswordSignature(input);
+        sec.verifyPasswordFetchSignature(input);
 
         // TODO: If 2 identical <domain,username> exist, this will not work fine.
         // TODO: Can't exist 2 or more identical <domain, username> in server
@@ -59,7 +59,7 @@ class PasswordRestController {
     ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException {
 
         String fingerprint = this.validateUser(input.publicKey);
-        this.validatePasswordSignature(input);
+        sec.verifyPasswordInsertSignature(input);
 
         return this.userRepository
                 .findByFingerprint(fingerprint)
@@ -91,17 +91,6 @@ class PasswordRestController {
         this.userRepository.findByFingerprint(fingerprint).orElseThrow(
                 () -> new UserNotFoundException());
         return fingerprint;
-    }
-
-    /**
-     * Verifies if request message correctly signed
-     *
-     * @param password
-     * @return void
-     * @throws NoSuchAlgorithmException
-     */
-    private void validatePasswordSignature(Password password) throws DuplicateRequestException, ExpiredTimestampException, NoSuchAlgorithmException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException {
-        sec.verifyPasswordSignature(password);
     }
 
     @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request is not correctly signed")

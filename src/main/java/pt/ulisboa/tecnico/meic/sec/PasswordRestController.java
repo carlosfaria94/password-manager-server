@@ -44,6 +44,7 @@ class PasswordRestController {
 
         // TODO: If 2 identical <domain,username> exist, this will not work fine.
         // TODO: Can't exist 2 or more identical <domain, username> in server
+        // TODO: Esta a buscar o mesmo <domain,username> para todas publicKeys -> findByDomainAndUsernameAndPublicKey
         Optional<Password> pwd = this.passwordRepository.findByDomainAndUsername(input.domain, input.username);
         if (pwd.isPresent()) {
             Password p = sec.getPasswordReadyToSend(pwd.get());

@@ -16,12 +16,10 @@ import java.util.HashMap;
 class Security {
 
     private CryptoManager cryptoManager;
-    private HashMap<String, Boolean> nounces;
     private KeyStore keyStore;
 
     Security(String keystorePath, char[] keystorePwd) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
         this.cryptoManager = new CryptoManager();
-        this.nounces = new HashMap<>();
         keyStore = CryptoUtilities.readKeystoreFile(keystorePath, keystorePwd);
     }
 
@@ -60,13 +58,6 @@ class Security {
                 cryptoManager.convertBase64ToBinary(nonce))){
             throw new ExpiredTimestampException();
         }
-        /*//Avoids replay attack
-        String n = nonce + generateFingerprint(publicKey);
-        if(nounces.containsKey(n)){
-            throw new DuplicateRequestException();
-        }
-
-        nounces.put(n, true);*/
     }
 
     void verifyPasswordSignature(Password password) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidPasswordSignatureException, InvalidRequestSignatureException {
@@ -84,17 +75,5 @@ class Security {
         cryptoManager.isValidSig(publicKey, myFields, password.reqSignature);
         verifyRequest(password.nonce, password.timestamp, password.publicKey);
 
-        /*//Verificar assinaturas dos campos em base64 ou bytes??
-        PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey)));
-        String passwordEntry = password.domain + password.username + password.password;
-        String request = password.pwdSignature + password.timestamp + password.nonce;
-
-        if(!cryptoManager.verifyDigitalSignature(password.reqSignature.getBytes(), request.getBytes(), publicKey)){
-            throw new InvalidRequestSignatureException();
-        }
-
-        if(!cryptoManager.verifyDigitalSignature(password.pwdSignature.getBytes(), passwordEntry.getBytes(), publicKey)){
-            throw new InvalidPasswordSignatureException();
-        }*/
     }
 }

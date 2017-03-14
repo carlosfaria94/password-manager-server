@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
-import java.time.Instant;
 
 @Entity
 public class Password {
@@ -39,8 +38,10 @@ public class Password {
     public String domain;
     public String username;
     public String password;
-    public String pwdSignature;
     public Timestamp registered;
+
+    @Column(length = 500)
+    public String pwdSignature;
 
     @Transient
     public String timestamp;

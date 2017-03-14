@@ -92,4 +92,9 @@ class Security {
 
         cryptoManager.isValidSig(publicKey, myFields, password.reqSignature);
     }
+
+    void verifyPublicKeySignature(User user) throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException {
+        PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(user.publicKey)));
+        cryptoManager.isValidSig(publicKey, new String[]{user.publicKey}, user.publicKey);
+    }
 }

@@ -4,11 +4,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pt.ulisboa.tecnico.meic.sec.exception.InvalidPublicKeyException;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.security.cert.CertificateException;
+import java.security.spec.InvalidKeySpecException;
 
 @RestController
 @RequestMapping("/")
@@ -28,9 +32,12 @@ class UserRestController {
      * @return user created and HTTP CREATED code
      */
     @RequestMapping(method = RequestMethod.POST)
-    ResponseEntity<?> registerUser(@RequestBody User input) throws NoSuchAlgorithmException, NullPointerException, CertificateException, KeyStoreException, IOException {
+    ResponseEntity<?> registerUser(@RequestBody User input) throws NoSuchAlgorithmException, NullPointerException, CertificateException, KeyStoreException, IOException, InvalidKeySpecException, SignatureException, InvalidKeyException {
         Security sec = new Security("keystore.jceks", "batata".toCharArray()); //same as password controller
         String fingerprint = sec.generateFingerprint(input.publicKey);
+        String signature = input.signature;
+
+        sec.verifyPublicKeySignature(input);
 
         if (!userRepository.findByFingerprint(fingerprint).isPresent()) {
             User newUser = userRepository.save(new User(fingerprint));
@@ -48,6 +55,12 @@ class UserRestController {
     @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Cryptographic algorithm is not available.")
     @ExceptionHandler({NoSuchAlgorithmException.class})
     public void noAlgorithm() {
+        // Nothing to do
+    }
+
+    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Invalid Public Key")
+    @ExceptionHandler({InvalidPublicKeyException.class})
+    public void InvalidPublicKeyException() {
         // Nothing to do
     }
 }

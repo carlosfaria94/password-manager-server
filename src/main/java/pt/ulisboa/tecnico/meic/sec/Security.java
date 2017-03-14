@@ -56,8 +56,8 @@ class Security {
     private void verifyRequest(String nonce, String timestamp, String publicKey) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException {
         //TODO FIXME XXX Erro semântico??
         //Avoids replay attack
-            if(!cryptoManager.isTimestampAndNonceValid(java.sql.Timestamp.valueOf(timestamp),
-                cryptoManager.convertBase64ToBinary(nonce))){
+        if(!cryptoManager.isTimestampAndNonceValid(java.sql.Timestamp.valueOf(timestamp),
+            cryptoManager.convertBase64ToBinary(nonce))){
             throw new ExpiredTimestampException();
         }
     }

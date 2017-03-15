@@ -39,13 +39,10 @@ class PasswordRestController {
 
     @RequestMapping(value = "/retrievePassword", method = RequestMethod.POST)
     ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
-        this.validateUser(input.publicKey);
+        String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordFetchSignature(input);
 
-        // TODO: If 2 identical <domain,username> exist, this will not work fine.
-        // TODO: Can't exist 2 or more identical <domain, username> in server
-        // TODO: Esta a buscar o mesmo <domain,username> para todas publicKeys -> findByDomainAndUsernameAndPublicKey
-        Optional<Password> pwd = this.passwordRepository.findByDomainAndUsername(input.domain, input.username);
+        Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsername(fingerprint, input.domain, input.username);
         if (pwd.isPresent()) {
             Password p = sec.getPasswordReadyToSend(pwd.get());
             return new ResponseEntity<>(p, null, HttpStatus.OK);
@@ -64,16 +61,35 @@ class PasswordRestController {
         return this.userRepository
                 .findByFingerprint(fingerprint)
                 .map(user -> {
-                    // TODO: If <domain,username> already exist, update.
 
                     Timestamp now = new Timestamp(System.currentTimeMillis());
 
-                    Password newPwd = passwordRepository.save(new Password(user,
-                            input.domain, input.username, input.password, input.pwdSignature, now, input.timestamp, input.nonce, input.reqSignature));
+                    /*
+                     To update the password, we first search for user passwords and see if domain,username already exist in DB.
+                     If true, we delete the pwd and save the new pwd
+                     If false, no pwd founded, so we create a new pwd
+                      */
+                    Optional<Password> pwd = passwordRepository.findByUserFingerprintAndDomainAndUsername(
+                            fingerprint, input.domain, input.username);
+                    if (pwd.isPresent()) {
+                        System.out.println("Password já existe, será substituída");
 
-                    System.out.println(now.toString() + ": New password registered. ID: " + newPwd.getId());
+                        passwordRepository.delete(pwd.get());
 
-                    return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
+                        Password newPwd = passwordRepository.save(new Password(user,
+                                input.domain, input.username, input.password, input.pwdSignature, now, input.timestamp, input.nonce, input.reqSignature));
+
+                        System.out.println(now.toString() + ": Password updated. ID: " + newPwd.getId());
+
+                        return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
+                    } else {
+                        Password newPwd = passwordRepository.save(new Password(user,
+                                input.domain, input.username, input.password, input.pwdSignature, now, input.timestamp, input.nonce, input.reqSignature));
+
+                        System.out.println(now.toString() + ": New password registered. ID: " + newPwd.getId());
+
+                        return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
+                    }
                 })
                 .orElse(ResponseEntity.noContent().build());
 

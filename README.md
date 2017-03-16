@@ -28,16 +28,17 @@ API Base URL: `http://localhost:8080`
 
 | HTTP Verb     | / | Body | Returns|
 |:-------------:|:---------------------|------|:--------|
-| POST          | Register a new user | publicKey | `201`|
+| POST          | Register a new user | publicKey, signature | `201`|
 
 ### Password Manager
 
 | HTTP Verb     | /password | Body | Returns|
 |:-------------:|:---------------------|------|:--------|
-| PUT          | Create a new password associated to the user or update existing one | publicKey, domain, username, password, digest(concat(domain,username,password)) | `201`|
+| PUT          | Create a new password or update existing one | publicKey, domain, username, password, pwdSignature, timestamp, nonce, reqSignature | The new password or the updated one with `201` status code |
 
 | HTTP Verb     | /retrievePassword | Body | Returns|
 |:-------------:|:---------------------|------|:--------|
-| POST           | Retrieve a specific password associated to the user | publicKey, domain, username | `200` - Password, Digest |
+| POST           | Retrieve a specific password associated to the user (publicKey) | publicKey, domain, username | The password (domain, password, username, pwdSignature, timestamp, nonce, reqSignature) with `200` status code |
+
 
 All the messages are authenticated, fresh and non repudiable.

@@ -28,7 +28,7 @@ API Base URL: `http://localhost:8080`
 
 | HTTP Verb     | / | Body | Returns|
 |:-------------:|:---------------------|------|:--------|
-| POST          | Register a new user | publicKey, signature | `201`|
+| POST          | Register a new user | publicKey, signature | The new user with `201` status code|
 
 ### Password Manager
 

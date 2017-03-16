@@ -63,8 +63,6 @@ class Security {
     }
 
     void verifyPasswordInsertSignature(Password password) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidPasswordSignatureException, InvalidRequestSignatureException {
-        verifyRequest(password.nonce, password.timestamp, password.publicKey);
-
         PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey)));
 
         String[] myFields = new String[]{password.publicKey,
@@ -76,10 +74,10 @@ class Security {
                 password.nonce};
 
         cryptoManager.isValidSig(publicKey, myFields, password.reqSignature);
+        verifyRequest(password.nonce, password.timestamp, password.publicKey);
     }
 
     void verifyPasswordFetchSignature(Password password) throws DuplicateRequestException, NoSuchAlgorithmException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException {
-        verifyRequest(password.nonce, password.timestamp, password.publicKey);
 
         PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey)));
 
@@ -91,6 +89,7 @@ class Security {
                 password.nonce};
 
         cryptoManager.isValidSig(publicKey, myFields, password.reqSignature);
+        verifyRequest(password.nonce, password.timestamp, password.publicKey);
     }
 
     void verifyPublicKeySignature(User user) throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException {

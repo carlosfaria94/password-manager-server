@@ -32,7 +32,7 @@ class UserRestController {
      * @return user created and HTTP CREATED code
      */
     @RequestMapping(method = RequestMethod.POST)
-    ResponseEntity<?> registerUser(@RequestBody User input) throws NoSuchAlgorithmException, NullPointerException, CertificateException, KeyStoreException, IOException, InvalidKeySpecException, SignatureException, InvalidKeyException {
+    ResponseEntity<?> registerUser(@RequestBody User input) throws ArrayIndexOutOfBoundsException, NoSuchAlgorithmException, NullPointerException, CertificateException, KeyStoreException, IOException, InvalidKeySpecException, SignatureException, InvalidKeyException {
         Security sec = new Security("keystore.jceks", "batata".toCharArray()); //same as password controller
         String fingerprint = sec.generateFingerprint(input.publicKey);
         sec.verifyPublicKeySignature(input);
@@ -63,7 +63,7 @@ class UserRestController {
     }
 
     @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Invalid Signature.")
-    @ExceptionHandler({SignatureException.class})
+    @ExceptionHandler({SignatureException.class, ArrayIndexOutOfBoundsException.class})
     public void signatureException() {
         System.err.println("Invalid Signature.");
     }

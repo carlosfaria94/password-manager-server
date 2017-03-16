@@ -111,19 +111,19 @@ class PasswordRestController {
     @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request is not correctly signed")
     @ExceptionHandler({InvalidRequestSignatureException.class})
     public void invalidRequestSignatureException() {
-        System.err.println("Request is not correctly signed");
+        System.err.println("Request is not correctly signed.");
     }
 
     @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Password is not correctly signed")
-    @ExceptionHandler({InvalidPasswordSignatureException.class, SignatureException.class})
+    @ExceptionHandler({InvalidPasswordSignatureException.class})
     public void invalidPasswordSignatureException() {
-        System.err.println("Password is not correctly signed");
+        System.err.println("Password is not correctly signed.");
     }
 
     @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request expired")
     @ExceptionHandler({ExpiredTimestampException.class})
     public void expiredTimestampException() {
-        System.err.println("Request expired");
+        System.err.println("Request expired.");
     }
 
     @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request already received")

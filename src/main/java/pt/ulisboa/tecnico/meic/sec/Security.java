@@ -92,7 +92,7 @@ class Security {
         verifyRequest(password.nonce, password.timestamp, password.publicKey);
     }
 
-    void verifyPublicKeySignature(User user) throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException {
+    void verifyPublicKeySignature(User user) throws ArrayIndexOutOfBoundsException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException {
         PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(user.publicKey)));
         cryptoManager.isValidSig(publicKey, new String[]{user.publicKey}, user.signature);
     }

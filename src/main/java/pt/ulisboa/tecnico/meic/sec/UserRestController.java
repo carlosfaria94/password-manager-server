@@ -35,8 +35,6 @@ class UserRestController {
     ResponseEntity<?> registerUser(@RequestBody User input) throws NoSuchAlgorithmException, NullPointerException, CertificateException, KeyStoreException, IOException, InvalidKeySpecException, SignatureException, InvalidKeyException {
         Security sec = new Security("keystore.jceks", "batata".toCharArray()); //same as password controller
         String fingerprint = sec.generateFingerprint(input.publicKey);
-        String signature = input.signature;
-
         sec.verifyPublicKeySignature(input);
 
         if (!userRepository.findByFingerprint(fingerprint).isPresent()) {
@@ -49,18 +47,24 @@ class UserRestController {
     @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Something is missing.")
     @ExceptionHandler({NullPointerException.class})
     public void nullException() {
-        // Nothing to do
+        System.err.println("Something is missing.");
     }
 
     @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Cryptographic algorithm is not available.")
     @ExceptionHandler({NoSuchAlgorithmException.class})
     public void noAlgorithm() {
-        // Nothing to do
+        System.err.println("Cryptographic algorithm is not available.");
     }
 
-    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Invalid Public Key")
+    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Invalid Public Key.")
     @ExceptionHandler({InvalidPublicKeyException.class})
-    public void InvalidPublicKeyException() {
-        // Nothing to do
+    public void invalidPublicKeyException() {
+        System.err.println("Invalid Public Key.");
+    }
+
+    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Invalid Signature.")
+    @ExceptionHandler({SignatureException.class})
+    public void signatureException() {
+        System.err.println("Invalid Signature.");
     }
 }

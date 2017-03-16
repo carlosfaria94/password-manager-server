@@ -31,6 +31,16 @@ public class Password {
         this.reqSignature = reqSignature;
     }
 
+    public Password(String publicKey, String domain, String username, String password, String pwdSignature, String timestamp, String nonce, String reqSignature) {
+        this.publicKey = publicKey;
+        this.domain = domain;
+        this.username = username;
+        this.password = password;
+        this.pwdSignature = pwdSignature;
+        this.timestamp = timestamp;
+        this.nonce = nonce;
+        this.reqSignature = reqSignature;
+    }
 
     @Transient
     public String publicKey;

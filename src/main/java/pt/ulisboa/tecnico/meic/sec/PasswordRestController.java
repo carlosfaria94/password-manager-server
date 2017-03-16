@@ -54,7 +54,6 @@ class PasswordRestController {
 
     @RequestMapping(value = "/password", method = RequestMethod.PUT)
     ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException {
-
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordInsertSignature(input);
 
@@ -112,36 +111,36 @@ class PasswordRestController {
     @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request is not correctly signed")
     @ExceptionHandler({InvalidRequestSignatureException.class})
     public void invalidRequestSignatureException() {
-        // Nothing to do
+        System.err.println("Request is not correctly signed");
     }
 
     @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Password is not correctly signed")
-    @ExceptionHandler({InvalidPasswordSignatureException.class})
+    @ExceptionHandler({InvalidPasswordSignatureException.class, SignatureException.class})
     public void invalidPasswordSignatureException() {
-        // Nothing to do
+        System.err.println("Password is not correctly signed");
     }
 
     @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request expired")
     @ExceptionHandler({ExpiredTimestampException.class})
     public void expiredTimestampException() {
-        // Nothing to do
+        System.err.println("Request expired");
     }
 
     @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request already received")
     @ExceptionHandler({DuplicateRequestException.class})
     public void duplicateRequestException() {
-        // Nothing to do
+        System.err.println("Request already received");
     }
 
     @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Something is missing.")
     @ExceptionHandler({NullPointerException.class})
     public void nullException() {
-        // Nothing to do
+        System.err.println("Something is missing.");
     }
 
     @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Cryptographic algorithm is not available.")
     @ExceptionHandler({NoSuchAlgorithmException.class})
     public void noAlgorithm() {
-        // Nothing to do
+        System.err.println("Cryptographic algorithm is not available.");
     }
 }

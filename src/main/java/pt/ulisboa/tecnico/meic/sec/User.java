@@ -34,6 +34,11 @@ public class User {
         this.fingerprint = fingerprint;
     }
 
+    public User(String publicKey, String signature) {
+        this.publicKey = publicKey;
+        this.signature = signature;
+    }
+
     User() { // jpa only
     }
 
@@ -42,6 +47,7 @@ public class User {
         return "User{" +
                 "id=" + id +
                 ", fingerprint='" + fingerprint + '\'' +
+                ", signature='" + signature + '\'' +
                 ", publicKey='" + publicKey + '\'' +
                 ", passwords=" + passwords +
                 '}';

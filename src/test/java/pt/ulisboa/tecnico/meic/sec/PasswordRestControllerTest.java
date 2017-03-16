@@ -72,10 +72,6 @@ public class PasswordRestControllerTest {
 
         this.passwordRepository.deleteAllInBatch();
         this.userRepository.deleteAllInBatch();
-
-
-        //this.passwordList.add(passwordRepository.save(new Password(user, "http://bookmark.com/1/" + userName, "A description")));
-        //this.passwordList.add(passwordRepository.save(new Password(user, "http://bookmark.com/2/" + userName, "A description")));
     }
 
 
@@ -95,7 +91,7 @@ public class PasswordRestControllerTest {
         mockMvc.perform(post("/")
                 .content(this.json(new User(
                         publicKey,
-                        "dsfJAMaJu2a+MTYAv4LtUrbaMH6VlFEQ24FXDE/CeIZFhWGNZxjHTHIBDB1BOyNLTP5S+RX41GF8kFPdeCXpLYAE1yjrb2jBIRIt5hYLrmg9KxzZLYYFzqBY7K/rcfSg30T/KtE8NC9ktesYxZp8WGBCCV4DMX69jrRSH8W0pjfPFdpHolaDGxBYfGHuMhqxeNCZ+8AR9tv+hhMLOsPDDkJOVNYM79J1Bzb2Z9BkoX9SABnOia9pr0VyX7oAiQSZa6KRyZTHZw=="
+                        "badbadbad+MTYAv4LtUrbaMH6VlFEQ24FXDE/CeIZFhWGNZxjHTHIBDB1BOyNLTP5S+RX41GF8kFPdeCXpLYAE1yjrb2jBIRIt5hYLrmg9KxzZLYYFzqBY7K/rcfSg30T/KtE8NC9ktesYxZp8WGBCCV4DMX69jrRSH8W0pjfPFdpHolaDGxBYfGHuMhqxeNCZ+8AR9tv+hhMLOsPDDkJOVNYM79J1Bzb2Z9BkoX9SABnOia9pr0VyX7oAiQSZa6KRyZTHZw=="
                 )))
                 .contentType(contentType))
                 .andExpect(status().isNotAcceptable());
@@ -142,42 +138,6 @@ public class PasswordRestControllerTest {
                 .content(passwordJson))
                 .andExpect(status().isNotAcceptable());
     }
-
-    /*@Test
-    public void readSingleBookmark() throws Exception {
-        mockMvc.perform(get("/" + userName + "/bookmarks/"
-                + this.passwordList.get(0).getId()))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(contentType))
-                .andExpect(jsonPath("$.id", is(this.passwordList.get(0).getId().intValue())))
-                .andExpect(jsonPath("$.uri", is("http://bookmark.com/1/" + userName)))
-                .andExpect(jsonPath("$.description", is("A description")));
-    }
-
-    @Test
-    public void readBookmarks() throws Exception {
-        mockMvc.perform(get("/" + userName + "/bookmarks"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(contentType))
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].id", is(this.passwordList.get(0).getId().intValue())))
-                .andExpect(jsonPath("$[0].uri", is("http://bookmark.com/1/" + userName)))
-                .andExpect(jsonPath("$[0].description", is("A description")))
-                .andExpect(jsonPath("$[1].id", is(this.passwordList.get(1).getId().intValue())))
-                .andExpect(jsonPath("$[1].uri", is("http://bookmark.com/2/" + userName)))
-                .andExpect(jsonPath("$[1].description", is("A description")));
-    }
-
-    @Test
-    public void createBookmark() throws Exception {
-        String bookmarkJson = json(new Password(
-                this.user, "http://spring.io", "a bookmark to the best resource for Spring news and information"));
-
-        this.mockMvc.perform(post("/" + userName + "/bookmarks")
-                .contentType(contentType)
-                .content(bookmarkJson))
-                .andExpect(status().isCreated());
-    }*/
 
     protected String json(Object o) throws IOException {
         MockHttpOutputMessage mockHttpOutputMessage = new MockHttpOutputMessage();

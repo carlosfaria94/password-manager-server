@@ -11,6 +11,7 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.sql.*;
 import java.util.HashMap;
 
 class Security {
@@ -33,7 +34,7 @@ class Security {
     Password getPasswordReadyToSend(Password password) throws NoSuchAlgorithmException, UnrecoverableKeyException, SignatureException, KeyStoreException, InvalidKeyException {
         password.publicKey = cryptoManager.convertBinaryToBase64(
                 CryptoUtilities.getPublicKeyFromKeystore(keyStore, "asymm", "batata".toCharArray()).getEncoded());
-        password.timestamp = cryptoManager.getActualTimestamp().toString();
+        password.timestamp = String.valueOf(cryptoManager.getActualTimestamp().getTime());
         password.nonce = cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32));
 
         String[] fieldsToSend = new String[]{
@@ -56,7 +57,7 @@ class Security {
     private void verifyRequest(String nonce, String timestamp, String publicKey) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException {
         //TODO FIXME XXX Erro semântico??
         //Avoids replay attack
-        if(!cryptoManager.isTimestampAndNonceValid(java.sql.Timestamp.valueOf(timestamp),
+        if(!cryptoManager.isTimestampAndNonceValid(new java.sql.Timestamp(Long.valueOf(timestamp)),
             cryptoManager.convertBase64ToBinary(nonce))){
             throw new ExpiredTimestampException();
         }

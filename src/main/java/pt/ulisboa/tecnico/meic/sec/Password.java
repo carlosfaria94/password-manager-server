@@ -19,13 +19,12 @@ public class Password {
     Password() { // jpa only
     }
 
-    public Password(User user, String domain, String username, String password, String pwdSignature, Timestamp registered, String timestamp, String nonce, String reqSignature) {
+    public Password(User user, String domain, String username, String password, String pwdSignature, String timestamp, String nonce, String reqSignature) {
         this.domain = domain;
         this.username = username;
         this.password = password;
         this.user = user;
         this.pwdSignature = pwdSignature;
-        this.registered = registered;
         this.timestamp = timestamp;
         this.nonce = nonce;
         this.reqSignature = reqSignature;
@@ -48,12 +47,10 @@ public class Password {
     public String domain;
     public String username;
     public String password;
-    public Timestamp registered;
 
     @Column(length = 500)
     public String pwdSignature;
 
-    @Transient
     public String timestamp;
     @Transient
     public String nonce;
@@ -82,7 +79,6 @@ public class Password {
                 ", nonce='" + nonce + '\'' +
                 ", timestamp='" + timestamp + '\'' +
                 ", reqSignature='" + reqSignature + '\'' +
-                ", registered=" + registered +
                 '}';
     }
 }

@@ -61,8 +61,6 @@ class PasswordRestController {
                 .findByFingerprint(fingerprint)
                 .map(user -> {
 
-                    Timestamp now = new Timestamp(System.currentTimeMillis());
-
                     /*
                      To update the password, we first search for user passwords and see if domain,username already exist in DB.
                      If true, we delete the pwd and save the new pwd
@@ -76,16 +74,16 @@ class PasswordRestController {
                         passwordRepository.delete(pwd.get());
 
                         Password newPwd = passwordRepository.save(new Password(user,
-                                input.domain, input.username, input.password, input.pwdSignature, now, input.timestamp, input.nonce, input.reqSignature));
+                                input.domain, input.username, input.password, input.pwdSignature, input.timestamp, input.nonce, input.reqSignature));
 
-                        System.out.println(now.toString() + ": Password updated. ID: " + newPwd.getId());
+                        System.out.println("Password updated. ID: " + newPwd.getId());
 
                         return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
                     } else {
                         Password newPwd = passwordRepository.save(new Password(user,
-                                input.domain, input.username, input.password, input.pwdSignature, now, input.timestamp, input.nonce, input.reqSignature));
+                                input.domain, input.username, input.password, input.pwdSignature, input.timestamp, input.nonce, input.reqSignature));
 
-                        System.out.println(now.toString() + ": New password registered. ID: " + newPwd.getId());
+                        System.out.println("New password registered. ID: " + newPwd.getId());
 
                         return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
                     }

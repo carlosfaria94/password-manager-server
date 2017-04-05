@@ -7,17 +7,39 @@ Implementation of a distributed password manager server with dependability guara
 
 A REST service API implemented using Spring Framework.
 
-The data is persisted in MySQL.
+The data is persisted in memory (using H2).
 
 ## Running
 
-##### Set this environment variables:
+##### Set this environment variables
 
-`MYSQL_DB_PASSWORD` - MySQL user password
+`FAULTS` - Number of faults that is designed to support
+
+##### Install dependencies
 
 ```
 mvn install
-mvn clean spring-boot:run
+```
+
+##### Starting the cluster according to the number of the faults to be supported
+
+e.g. to support one fault
+
+```
+FAULTS=1 sh ./start.sh
+```
+
+##### Stop the cluster
+
+
+```
+FAULTS=1 sh ./stop.sh
+```
+
+##### To run only one instance
+
+```
+SERVER_PORT=3001 mvn spring-boot:run -Dmaven.test.skip
 ```
 
 ## Endpoints

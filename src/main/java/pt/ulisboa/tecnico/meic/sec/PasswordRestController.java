@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
-import java.sql.Timestamp;
 import java.util.Optional;
 
 @RestController
@@ -24,6 +23,7 @@ class PasswordRestController {
     private final UserRepository userRepository;
     private final String keystorePath; // static para serem init na main??
     private final String keystorePwd;
+    private final String serverName = System.getenv("SERVER_NAME");
 
     private Security sec;
 
@@ -32,7 +32,7 @@ class PasswordRestController {
                            UserRepository userRepository) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
         this.passwordRepository = passwordRepository;
         this.userRepository = userRepository;
-        keystorePath = "keystore.jceks";
+        keystorePath = "keystore-" + serverName + ".jceks";
         keystorePwd = "batata";
         sec = new Security(keystorePath, keystorePwd.toCharArray());
     }

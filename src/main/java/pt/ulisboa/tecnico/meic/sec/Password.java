@@ -50,6 +50,8 @@ public class Password {
     @Column(length = 500)
     public String pwdSignature;
 
+    public int versionNumber;
+
     public String timestamp;
     @Transient
     public String nonce;
@@ -75,6 +77,7 @@ public class Password {
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
                 ", pwdSignature='" + pwdSignature + '\'' +
+                ", versionNumber='" + versionNumber + '\'' +
                 ", nonce='" + nonce + '\'' +
                 ", timestamp='" + timestamp + '\'' +
                 ", reqSignature='" + reqSignature + '\'' +

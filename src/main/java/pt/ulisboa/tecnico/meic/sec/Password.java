@@ -3,7 +3,6 @@ package pt.ulisboa.tecnico.meic.sec;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
 
 @Entity
 public class Password {

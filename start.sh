@@ -17,7 +17,8 @@ run_program ()
     return 0
   fi
 
-  SERVER_PORT=$port mvn spring-boot:run -Dmaven.test.skip >> $logfile 2>&1 &
+  SERVER_NAME=$servername sh ./genKeystore.sh
+  SERVER_PORT=$port SERVER_NAME=$servername mvn spring-boot:run -Dmaven.test.skip >> $logfile 2>&1 &
   PID=$!
   if [ $? -eq 0 ]
   then

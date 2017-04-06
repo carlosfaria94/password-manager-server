@@ -11,10 +11,6 @@ The data is persisted in memory (using H2).
 
 ## Running
 
-##### Set this environment variables
-
-`FAULTS` - Number of faults that is designed to support
-
 ##### Install dependencies
 
 ```
@@ -39,7 +35,7 @@ FAULTS=1 sh ./stop.sh
 ##### To run only one instance
 
 ```
-SERVER_PORT=3001 mvn spring-boot:run -Dmaven.test.skip
+SERVER_PORT=3001 SERVER_NAME=server mvn spring-boot:run -Dmaven.test.skip
 ```
 
 ## Endpoints

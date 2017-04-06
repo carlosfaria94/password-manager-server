@@ -19,6 +19,7 @@ import java.security.spec.InvalidKeySpecException;
 class UserRestController {
 
     private final UserRepository userRepository;
+    private final String serverName = System.getenv("SERVER_NAME");
 
     @Autowired
     UserRestController(UserRepository userRepository) {
@@ -33,7 +34,7 @@ class UserRestController {
      */
     @RequestMapping(method = RequestMethod.POST)
     ResponseEntity<?> registerUser(@RequestBody User input) throws ArrayIndexOutOfBoundsException, NoSuchAlgorithmException, NullPointerException, CertificateException, KeyStoreException, IOException, InvalidKeySpecException, SignatureException, InvalidKeyException {
-        Security sec = new Security("keystore.jceks", "batata".toCharArray()); //same as password controller
+        Security sec = new Security("keystore-" + serverName + ".jceks", "batata".toCharArray()); //same as password controller
         String fingerprint = sec.generateFingerprint(input.publicKey);
         sec.verifyPublicKeySignature(input);
 

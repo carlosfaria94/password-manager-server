@@ -11,7 +11,7 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.sql.*;
+import java.sql.Timestamp;
 import java.util.HashMap;
 
 class Security {
@@ -57,7 +57,7 @@ class Security {
     private void verifyRequest(String nonce, String timestamp, String publicKey) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException {
         //TODO FIXME XXX Erro semântico??
         //Avoids replay attack
-        if(!cryptoManager.isTimestampAndNonceValid(new java.sql.Timestamp(Long.valueOf(timestamp)),
+        if(!cryptoManager.isTimestampAndNonceValid(new Timestamp(Long.valueOf(timestamp)),
             cryptoManager.convertBase64ToBinary(nonce))){
             throw new ExpiredTimestampException();
         }

@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
-import java.sql.Timestamp;
 import java.util.Optional;
 
 @RestController

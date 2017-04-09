@@ -57,6 +57,7 @@ class PasswordRestController {
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordInsertSignature(input);
 
+        System.out.println(input);
         return this.userRepository
                 .findByFingerprint(fingerprint)
                 .map(user -> {
@@ -74,14 +75,14 @@ class PasswordRestController {
                         passwordRepository.delete(pwd.get());
 
                         Password newPwd = passwordRepository.save(new Password(user,
-                                input.domain, input.username, input.password, input.pwdSignature, input.timestamp, input.nonce, input.reqSignature));
+                                input.domain, input.username, input.password, input.versionNumber, input.pwdSignature, input.timestamp, input.nonce, input.reqSignature));
 
                         System.out.println("Password updated. ID: " + newPwd.getId());
 
                         return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
                     } else {
                         Password newPwd = passwordRepository.save(new Password(user,
-                                input.domain, input.username, input.password, input.pwdSignature, input.timestamp, input.nonce, input.reqSignature));
+                                input.domain, input.username, input.password, input.versionNumber, input.pwdSignature, input.timestamp, input.nonce, input.reqSignature));
 
                         System.out.println("New password registered. ID: " + newPwd.getId());
 

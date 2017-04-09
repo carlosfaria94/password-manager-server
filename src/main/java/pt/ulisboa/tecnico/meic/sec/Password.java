@@ -28,12 +28,35 @@ public class Password {
         this.nonce = nonce;
         this.reqSignature = reqSignature;
     }
+    public Password(User user, String domain, String username, String password, String versionNumber, String pwdSignature, String timestamp, String nonce, String reqSignature) {
+        this.domain = domain;
+        this.username = username;
+        this.password = password;
+        this.user = user;
+        this.versionNumber = versionNumber;
+        this.pwdSignature = pwdSignature;
+        this.timestamp = timestamp;
+        this.nonce = nonce;
+        this.reqSignature = reqSignature;
+    }
 
     public Password(String publicKey, String domain, String username, String password, String pwdSignature, String timestamp, String nonce, String reqSignature) {
         this.publicKey = publicKey;
         this.domain = domain;
         this.username = username;
         this.password = password;
+        this.pwdSignature = pwdSignature;
+        this.timestamp = timestamp;
+        this.nonce = nonce;
+        this.reqSignature = reqSignature;
+    }
+
+    public Password(String publicKey, String domain, String username, String password, String versionNumber, String pwdSignature, String timestamp, String nonce, String reqSignature) {
+        this.publicKey = publicKey;
+        this.domain = domain;
+        this.username = username;
+        this.password = password;
+        this.versionNumber = versionNumber;
         this.pwdSignature = pwdSignature;
         this.timestamp = timestamp;
         this.nonce = nonce;
@@ -50,7 +73,7 @@ public class Password {
     @Column(length = 500)
     public String pwdSignature;
 
-    public int versionNumber;
+    public String versionNumber;
 
     public String timestamp;
     @Transient
@@ -76,8 +99,8 @@ public class Password {
                 ", domain='" + domain + '\'' +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
-                ", pwdSignature='" + pwdSignature + '\'' +
                 ", versionNumber='" + versionNumber + '\'' +
+                ", pwdSignature='" + pwdSignature + '\'' +
                 ", nonce='" + nonce + '\'' +
                 ", timestamp='" + timestamp + '\'' +
                 ", reqSignature='" + reqSignature + '\'' +

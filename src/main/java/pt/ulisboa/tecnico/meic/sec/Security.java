@@ -42,6 +42,7 @@ class Security {
                 password.domain, // domain
                 password.username, // username
                 password.password, // password
+                password.versionNumber, // vresion
                 password.pwdSignature,
                 password.timestamp,
                 password.nonce,

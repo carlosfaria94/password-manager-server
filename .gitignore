@@ -39,3 +39,4 @@ nbdist/
 /keystore*
 /mvnw.cmd
 /mvnw
+/pids/

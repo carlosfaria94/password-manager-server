@@ -21,7 +21,7 @@ class PasswordRestController {
     private final PasswordRepository passwordRepository;
 
     private final UserRepository userRepository;
-    private final String keystorePath; // static para serem init na main??
+    private final String keystorePath;
     private final String keystorePwd;
     private final String serverName = System.getenv("SERVER_NAME");
 
@@ -53,14 +53,17 @@ class PasswordRestController {
 
 
     @RequestMapping(value = "/password", method = RequestMethod.PUT)
-    ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException {
+    ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordInsertSignature(input);
 
         System.out.println(input);
+
         return this.userRepository
                 .findByFingerprint(fingerprint)
                 .map(user -> {
+
+                    Password newPwd = null;
 
                     /*
                      To update the password, we first search for user passwords and see if domain,username already exist in DB.
@@ -74,23 +77,32 @@ class PasswordRestController {
 
                         passwordRepository.delete(pwd.get());
 
-                        Password newPwd = passwordRepository.save(new Password(user,
+                        newPwd = passwordRepository.save(new Password(user,
                                 input.domain, input.username, input.password, input.versionNumber, input.pwdSignature, input.timestamp, input.nonce, input.reqSignature));
 
                         System.out.println("Password updated. ID: " + newPwd.getId());
 
-                        return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
                     } else {
-                        Password newPwd = passwordRepository.save(new Password(user,
+                        newPwd = passwordRepository.save(new Password(user,
                                 input.domain, input.username, input.password, input.versionNumber, input.pwdSignature, input.timestamp, input.nonce, input.reqSignature));
 
                         System.out.println("New password registered. ID: " + newPwd.getId());
-
-                        return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
                     }
+
+                    // Add server public key to the new pwd
+                    try {
+                        newPwd.publicKey = sec.getServerPublicKey();
+                    } catch (UnrecoverableKeyException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchAlgorithmException e) {
+                        e.printStackTrace();
+                    } catch (KeyStoreException e) {
+                        e.printStackTrace();
+                    }
+
+                    return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
                 })
                 .orElse(ResponseEntity.noContent().build());
-
     }
 
     /**

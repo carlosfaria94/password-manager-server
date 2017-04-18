@@ -39,10 +39,10 @@ class Security {
 
         String[] fieldsToSend = new String[]{
                 password.publicKey,
-                password.domain, // domain
-                password.username, // username
-                password.password, // password
-                password.versionNumber, // vresion
+                password.domain,
+                password.username,
+                password.password,
+                password.versionNumber,
                 password.pwdSignature,
                 password.timestamp,
                 password.nonce,
@@ -52,6 +52,10 @@ class Security {
                 cryptoManager.signFields(fieldsToSend, keyStore, "asymm", "batata".toCharArray()));
 
         return password;
+    }
+
+    String getServerPublicKey() throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
+        return cryptoManager.convertBinaryToBase64(CryptoUtilities.getPublicKeyFromKeystore(keyStore, "asymm", "batata".toCharArray()).getEncoded());
     }
 
 

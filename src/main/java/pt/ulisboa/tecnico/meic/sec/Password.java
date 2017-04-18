@@ -15,6 +15,35 @@ public class Password {
     @GeneratedValue
     private Integer id;
 
+    @Transient
+    public String publicKey;
+
+    public String domain;
+    public String username;
+    public String password;
+
+    @Column(length = 500)
+    public String pwdSignature;
+
+    public String versionNumber;
+
+    @Transient
+    public String deviceId;
+
+    public String timestamp;
+    @Transient
+    public String nonce;
+    @Transient
+    public String reqSignature;
+
+    public User getUser() {
+        return user;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
     Password() { // jpa only
     }
 
@@ -61,32 +90,6 @@ public class Password {
         this.timestamp = timestamp;
         this.nonce = nonce;
         this.reqSignature = reqSignature;
-    }
-
-    @Transient
-    public String publicKey;
-
-    public String domain;
-    public String username;
-    public String password;
-
-    @Column(length = 500)
-    public String pwdSignature;
-
-    public String versionNumber;
-
-    public String timestamp;
-    @Transient
-    public String nonce;
-    @Transient
-    public String reqSignature;
-
-    public User getUser() {
-        return user;
-    }
-
-    public Integer getId() {
-        return id;
     }
 
     @Override

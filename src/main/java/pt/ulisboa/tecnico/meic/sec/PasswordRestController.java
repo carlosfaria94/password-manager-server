@@ -89,18 +89,22 @@ class PasswordRestController {
                         System.out.println("New password registered. ID: " + newPwd.getId());
                     }
 
-                    // Add server public key to the new pwd
+                    Password p = null;
                     try {
-                        newPwd.publicKey = sec.getServerPublicKey();
+                        p = sec.getPasswordReadyToSend(newPwd);
+                    } catch (NoSuchAlgorithmException e) {
+                        e.printStackTrace();
                     } catch (UnrecoverableKeyException e) {
                         e.printStackTrace();
-                    } catch (NoSuchAlgorithmException e) {
+                    } catch (SignatureException e) {
                         e.printStackTrace();
                     } catch (KeyStoreException e) {
                         e.printStackTrace();
+                    } catch (InvalidKeyException e) {
+                        e.printStackTrace();
                     }
 
-                    return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
+                    return new ResponseEntity<>(p, null, HttpStatus.CREATED);
                 })
                 .orElse(ResponseEntity.noContent().build());
     }

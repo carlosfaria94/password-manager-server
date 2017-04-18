@@ -54,10 +54,6 @@ class Security {
         return password;
     }
 
-    String getServerPublicKey() throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
-        return cryptoManager.convertBinaryToBase64(CryptoUtilities.getPublicKeyFromKeystore(keyStore, "asymm", "batata".toCharArray()).getEncoded());
-    }
-
 
     private void verifyRequest(String nonce, String timestamp, String publicKey) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException {
         //TODO FIXME XXX Erro semântico??

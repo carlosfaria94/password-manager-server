@@ -42,7 +42,11 @@ class PasswordRestController {
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordFetchSignature(input);
 
-        Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsername(fingerprint, input.domain, input.username);
+        Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsername(
+                fingerprint,
+                input.domain,
+                input.username
+        );
         if (pwd.isPresent()) {
             Password p = sec.getPasswordReadyToSend(pwd.get());
             return new ResponseEntity<>(p, null, HttpStatus.OK);
@@ -71,20 +75,43 @@ class PasswordRestController {
                      If false, no pwd founded, so we create a new pwd
                       */
                     Optional<Password> pwd = passwordRepository.findByUserFingerprintAndDomainAndUsername(
-                            fingerprint, input.domain, input.username);
+                            fingerprint,
+                            input.domain,
+                            input.username
+                    );
                     if (pwd.isPresent()) {
                         System.out.println("Password já existe, será substituída");
 
                         passwordRepository.delete(pwd.get());
 
-                        newPwd = passwordRepository.save(new Password(user,
-                                input.domain, input.username, input.password, input.versionNumber, input.pwdSignature, input.timestamp, input.nonce, input.reqSignature));
+                        newPwd = passwordRepository.save(new Password(
+                                user,
+                                input.domain,
+                                input.username,
+                                input.password,
+                                input.versionNumber,
+                                input.pwdSignature,
+                                input.iv,
+                                input.timestamp,
+                                input.nonce,
+                                input.reqSignature
+                        ));
 
                         System.out.println("Password updated. ID: " + newPwd.getId());
 
                     } else {
-                        newPwd = passwordRepository.save(new Password(user,
-                                input.domain, input.username, input.password, input.versionNumber, input.pwdSignature, input.timestamp, input.nonce, input.reqSignature));
+                        newPwd = passwordRepository.save(new Password(
+                                user,
+                                input.domain,
+                                input.username,
+                                input.password,
+                                input.versionNumber,
+                                input.pwdSignature,
+                                input.iv,
+                                input.timestamp,
+                                input.nonce,
+                                input.reqSignature
+                        ));
 
                         System.out.println("New password registered. ID: " + newPwd.getId());
                     }

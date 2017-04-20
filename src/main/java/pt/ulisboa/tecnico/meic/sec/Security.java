@@ -44,7 +44,6 @@ class Security {
                 password.password,
                 password.versionNumber,
                 password.pwdSignature,
-                password.iv,
                 password.timestamp,
                 password.nonce,
         };
@@ -73,7 +72,6 @@ class Security {
                 password.username,
                 password.password,
                 password.pwdSignature,
-                password.iv,
                 password.timestamp,
                 password.nonce
         };

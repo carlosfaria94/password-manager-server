@@ -29,7 +29,6 @@ public class Password {
     public String pwdSignature;
 
     public String versionNumber;
-    public String iv;
     public String timestamp;
     @Transient
     public String nonce;
@@ -47,14 +46,13 @@ public class Password {
     Password() { // jpa only
     }
 
-    public Password(User user, String domain, String username, String password, String versionNumber, String pwdSignature, String iv, String timestamp, String nonce, String reqSignature) {
+    public Password(User user, String domain, String username, String password, String versionNumber, String pwdSignature, String timestamp, String nonce, String reqSignature) {
         this.domain = domain;
         this.username = username;
         this.password = password;
         this.user = user;
         this.versionNumber = versionNumber;
         this.pwdSignature = pwdSignature;
-        this.iv = iv;
         this.timestamp = timestamp;
         this.nonce = nonce;
         this.reqSignature = reqSignature;

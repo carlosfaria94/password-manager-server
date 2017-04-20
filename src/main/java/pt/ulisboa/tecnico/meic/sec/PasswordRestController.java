@@ -91,7 +91,6 @@ class PasswordRestController {
                                 input.password,
                                 input.versionNumber,
                                 input.pwdSignature,
-                                input.iv,
                                 input.timestamp,
                                 input.nonce,
                                 input.reqSignature
@@ -107,7 +106,6 @@ class PasswordRestController {
                                 input.password,
                                 input.versionNumber,
                                 input.pwdSignature,
-                                input.iv,
                                 input.timestamp,
                                 input.nonce,
                                 input.reqSignature

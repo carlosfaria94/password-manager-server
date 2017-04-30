@@ -71,16 +71,19 @@ class Security {
                 password.domain,
                 password.username,
                 password.password,
+                password.versionNumber,
+                password.deviceId,
                 password.pwdSignature,
                 password.timestamp,
                 password.nonce
         };
 
-        cryptoManager.isValidSig(publicKey, myFields, password.reqSignature);
+        if(!cryptoManager.isValidSig(publicKey, myFields, password.reqSignature))
+            throw new InvalidRequestSignatureException();
         verifyFreshness(password.nonce, password.timestamp);
     }
 
-    void verifyPasswordFetchSignature(Password password) throws DuplicateRequestException, NoSuchAlgorithmException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException {
+    void verifyPasswordFetchSignature(Password password) throws DuplicateRequestException, NoSuchAlgorithmException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidRequestSignatureException {
 
         PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey)));
 
@@ -89,16 +92,19 @@ class Security {
                 password.publicKey,
                 password.domain,
                 password.username,
+                password.pwdSignature,
                 password.timestamp,
                 password.nonce
         };
 
-        cryptoManager.isValidSig(publicKey, myFields, password.reqSignature);
+        if(!cryptoManager.isValidSig(publicKey, myFields, password.reqSignature))
+            throw new InvalidRequestSignatureException();
         verifyFreshness(password.nonce, password.timestamp);
     }
 
-    void verifyPublicKeySignature(User user) throws ArrayIndexOutOfBoundsException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException {
+    void verifyPublicKeySignature(User user) throws ArrayIndexOutOfBoundsException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidRequestSignatureException {
         PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(user.publicKey)));
-        cryptoManager.isValidSig(publicKey, new String[]{user.publicKey}, user.signature);
+        if(!cryptoManager.isValidSig(publicKey, new String[]{user.publicKey}, user.signature))
+            throw new InvalidRequestSignatureException();
     }
 }

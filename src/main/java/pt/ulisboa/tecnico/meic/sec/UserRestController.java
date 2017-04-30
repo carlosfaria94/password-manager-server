@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pt.ulisboa.tecnico.meic.sec.exception.InvalidPublicKeyException;
+import pt.ulisboa.tecnico.meic.sec.exception.InvalidRequestSignatureException;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -34,15 +35,19 @@ class UserRestController {
      */
     @RequestMapping(method = RequestMethod.POST)
     ResponseEntity<?> registerUser(@RequestBody User input) throws ArrayIndexOutOfBoundsException, NoSuchAlgorithmException, NullPointerException, CertificateException, KeyStoreException, IOException, InvalidKeySpecException, SignatureException, InvalidKeyException {
-        Security sec = new Security("keystore-" + serverName + ".jceks", "batata".toCharArray()); //same as password controller
-        String fingerprint = sec.generateFingerprint(input.publicKey);
-        sec.verifyPublicKeySignature(input);
+        try {
+            Security sec = new Security("keystore-" + serverName + ".jceks", "batata".toCharArray()); //same as password controller
+            String fingerprint = sec.generateFingerprint(input.publicKey);
+            sec.verifyPublicKeySignature(input);
 
-        if (!userRepository.findByFingerprint(fingerprint).isPresent()) {
-            User newUser = userRepository.save(new User(fingerprint));
-            return new ResponseEntity<>(newUser, null, HttpStatus.CREATED);
+            if (!userRepository.findByFingerprint(fingerprint).isPresent()) {
+                User newUser = userRepository.save(new User(fingerprint));
+                return new ResponseEntity<>(newUser, null, HttpStatus.CREATED);
+            }
+            return new ResponseEntity<>(null, null, HttpStatus.CONFLICT);
+        } catch (InvalidRequestSignatureException e) {
+            return new ResponseEntity<>(null, null, HttpStatus.CONFLICT);
         }
-        return new ResponseEntity<>(null, null, HttpStatus.CONFLICT);
     }
 
     @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Something is missing.")

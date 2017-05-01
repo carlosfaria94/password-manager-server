@@ -48,6 +48,16 @@ API Base URL: `http://localhost:8080`
 |:-------------:|:---------------------|------|:--------|
 | POST          | Register a new user | publicKey, signature | The new user with `201` status code|
 
+### AES IV
+
+| HTTP Verb     | /iv | Body | Returns|
+|:-------------:|:---------------------|------|:--------|
+| PUT          | Create a new IV or update existing one | `publicKey`, `hash`: Digest(domain+username+key), `value`  | The new IV or the updated one with `201` status code |
+
+| HTTP Verb     | /retrieveIv | Body | Returns|
+|:-------------:|:---------------------|------|:--------|
+| POST           | Retrieve a specific IV associated to the user (`publicKey`) | `publicKey`, `hash`: Digest(domain+username+key) | The `value` of IV with `200` status code |
+
 ### Password Manager
 
 | HTTP Verb     | /password | Body | Returns|

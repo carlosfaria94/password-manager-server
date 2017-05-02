@@ -38,20 +38,40 @@ class Security {
         password.nonce = cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32));
 
         String[] fieldsToSend = new String[]{
-                password.publicKey,
-                password.domain,
-                password.username,
-                password.password,
-                password.versionNumber,
-                password.pwdSignature,
-                password.timestamp,
-                password.nonce,
+            password.publicKey,
+            password.domain,
+            password.username,
+            password.password,
+            password.versionNumber,
+            password.pwdSignature,
+            password.timestamp,
+            password.nonce,
         };
 
         password.reqSignature = cryptoManager.convertBinaryToBase64(
                 cryptoManager.signFields(fieldsToSend, keyStore, "asymm", "batata".toCharArray()));
 
         return password;
+    }
+
+    IV getIVReadyToSend(IV iv) throws NoSuchAlgorithmException, UnrecoverableKeyException, SignatureException, KeyStoreException, InvalidKeyException {
+        iv.publicKey = cryptoManager.convertBinaryToBase64(
+                CryptoUtilities.getPublicKeyFromKeystore(keyStore, "asymm", "batata".toCharArray()).getEncoded());
+        iv.timestamp = String.valueOf(cryptoManager.getActualTimestamp().getTime());
+        iv.nonce = cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32));
+
+        String[] fieldsToSend = new String[]{
+                iv.publicKey,
+                iv.hash,
+                iv.value,
+                iv.timestamp,
+                iv.nonce,
+        };
+
+        iv.reqSignature = cryptoManager.convertBinaryToBase64(
+                cryptoManager.signFields(fieldsToSend, keyStore, "asymm", "batata".toCharArray()));
+
+        return iv;
     }
 
 
@@ -83,10 +103,29 @@ class Security {
         verifyFreshness(password.nonce, password.timestamp);
     }
 
+    void verifyIVInsertSignature(IV iv) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidPasswordSignatureException, InvalidRequestSignatureException {
+        PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(
+                new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(iv.publicKey))
+        );
+
+        String[] myFields = new String[]{
+                iv.publicKey,
+                iv.hash,
+                iv.value,
+                iv.timestamp,
+                iv.nonce
+        };
+
+        if(!cryptoManager.isValidSig(publicKey, myFields, iv.reqSignature))
+            throw new InvalidRequestSignatureException();
+        verifyFreshness(iv.nonce, iv.timestamp);
+    }
+
     void verifyPasswordFetchSignature(Password password) throws DuplicateRequestException, NoSuchAlgorithmException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidRequestSignatureException {
 
-        PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey)));
-
+        PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(
+                new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey))
+        );
 
         String[] myFields = new String[]{
                 password.publicKey,
@@ -100,6 +139,24 @@ class Security {
         if (!cryptoManager.isValidSig(publicKey, myFields, password.reqSignature))
             throw new InvalidRequestSignatureException();
         verifyFreshness(password.nonce, password.timestamp);
+    }
+
+    void verifyIVFetchSignature(IV iv) throws DuplicateRequestException, NoSuchAlgorithmException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidRequestSignatureException {
+
+        PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(
+                new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(iv.publicKey))
+        );
+
+        String[] myFields = new String[]{
+                iv.publicKey,
+                iv.hash,
+                iv.timestamp,
+                iv.nonce
+        };
+
+        if(!cryptoManager.isValidSig(publicKey, myFields, iv.reqSignature))
+            throw new InvalidRequestSignatureException();
+        verifyFreshness(iv.nonce, iv.timestamp);
     }
 
     void verifyPublicKeySignature(User user) throws ArrayIndexOutOfBoundsException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidRequestSignatureException {

@@ -7,13 +7,25 @@ import javax.persistence.*;
 @Entity
 public class Password {
 
+    @JsonIgnore
+    @ManyToOne
+    private User user;
+
+    @Id
+    @GeneratedValue
+    private Integer id;
+
     @Transient
     public String publicKey;
+
     public String domain;
     public String username;
     public String password;
+    public String iv;
+
     @Column(length = 500)
     public String pwdSignature;
+
     public String deviceId;
     public String versionNumber;
     public String timestamp;
@@ -21,12 +33,14 @@ public class Password {
     public String nonce;
     @Transient
     public String reqSignature;
-    @JsonIgnore
-    @ManyToOne
-    private User user;
-    @Id
-    @GeneratedValue
-    private Integer id;
+
+    public User getUser() {
+        return user;
+    }
+
+    public Integer getId() {
+        return id;
+    }
 
     Password() { // jpa only
     }
@@ -68,17 +82,8 @@ public class Password {
         this.reqSignature = reqSignature;
     }
 
-    public User getUser() {
-        return user;
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
     @Override
     public String toString() {
-        //FIXME
         return "Password{" +
                 "user=" + user +
                 ", id=" + id +
@@ -86,11 +91,11 @@ public class Password {
                 ", domain='" + domain + '\'' +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
-                ", versionNumber='" + versionNumber + '\'' +
-                ", deviceId='" + deviceId + '\'' +
                 ", pwdSignature='" + pwdSignature + '\'' +
-                ", nonce='" + nonce + '\'' +
+                ", deviceId='" + deviceId + '\'' +
+                ", versionNumber='" + versionNumber + '\'' +
                 ", timestamp='" + timestamp + '\'' +
+                ", nonce='" + nonce + '\'' +
                 ", reqSignature='" + reqSignature + '\'' +
                 '}';
     }

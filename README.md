@@ -52,7 +52,7 @@ API Base URL: `http://localhost:8080`
 
 | HTTP Verb     | /iv | Body | Returns|
 |:-------------:|:---------------------|------|:--------|
-| PUT          | Create a new IV or update existing one | `publicKey`, `hash`: Digest(domain+username+key), `value`  | The new IV or the updated one with `201` status code |
+| PUT          | Create a new IV or update existing one | `publicKey`, `hash`: Digest(domain+username+key), `value`, `timestamp`, `nonce`, `reqSignature`  | The new IV or the updated one with `201` status code |
 
 | HTTP Verb     | /retrieveIv | Body | Returns|
 |:-------------:|:---------------------|------|:--------|

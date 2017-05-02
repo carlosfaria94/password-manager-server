@@ -13,13 +13,12 @@ import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
+import java.util.Optional;
 
 @RestController
-class PasswordRestController {
+class IVRestController {
 
-    private final PasswordRepository passwordRepository;
+    private final IVRepository ivRepository;
 
     private final UserRepository userRepository;
     private final String keystorePath;
@@ -29,102 +28,78 @@ class PasswordRestController {
     private Security sec;
 
     @Autowired
-    PasswordRestController(PasswordRepository passwordRepository,
-                           UserRepository userRepository) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
-        this.passwordRepository = passwordRepository;
+    IVRestController(IVRepository ivRepository,
+                     UserRepository userRepository) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
+        this.ivRepository = ivRepository;
         this.userRepository = userRepository;
         keystorePath = "keystore-" + serverName + ".jceks";
         keystorePwd = "batata";
         sec = new Security(keystorePath, keystorePwd.toCharArray());
     }
 
-    @RequestMapping(value = "/retrievePassword", method = RequestMethod.POST)
-    ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
+    @RequestMapping(value = "/retrieveIv", method = RequestMethod.POST)
+    ResponseEntity<?> retrieveIv(@RequestBody IV input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
-        sec.verifyPasswordFetchSignature(input);
+        sec.verifyIVFetchSignature(input);
 
-        ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findByUserFingerprintAndDomainAndUsername(
+        Optional<IV> iv = this.ivRepository.findByUserFingerprintAndHash(
                 fingerprint,
-                input.domain,
-                input.username
-        ));
-
-        if (passwords.isEmpty()) {
-            return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
+                input.hash
+        );
+        if (iv.isPresent()) {
+            IV _iv = sec.getIVReadyToSend(iv.get());
+            return new ResponseEntity<>(_iv, null, HttpStatus.OK);
         } else {
-            Password maximum = passwords.get(0);
-            for (Password p : passwords) {
-                if(Timestamp.valueOf(p.timestamp).getTime() >
-                        Timestamp.valueOf(maximum.timestamp).getTime()) {
-                    maximum = p;
-                }
-            }
-            Password p = sec.getPasswordReadyToSend(maximum);
-            return new ResponseEntity<>(p, null, HttpStatus.OK);
+            return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
         }
     }
 
 
-    @RequestMapping(value = "/password", method = RequestMethod.PUT)
-    ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
+    @RequestMapping(value = "/iv", method = RequestMethod.PUT)
+    ResponseEntity<?> addIV(@RequestBody IV input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
-        sec.verifyPasswordInsertSignature(input);
+        sec.verifyIVInsertSignature(input);
 
         System.out.println(input);
 
         return this.userRepository.findByFingerprint(fingerprint).map(user -> {
+            IV newIV = null;
 
             /*
              To update the password, we first search for user passwords and see if domain,username already exist in DB.
              If true, we delete the pwd and save the new pwd
              If false, no pwd founded, so we create a new pwd
               */
-            /*Optional<Password> pwd = passwordRepository.findByUserFingerprintAndDomainAndUsername(
+            Optional<IV> iv = ivRepository.findByUserFingerprintAndHash(
                     fingerprint,
-                    input.domain,
-                    input.username
+                    input.hash
             );
-            if (pwd.isPresent()) {
-                System.out.println("Password já existe, será substituída");
+            if (iv.isPresent()) {
+                System.out.println("IV já existe, será substituída");
 
-                passwordRepository.delete(pwd.get());
+                ivRepository.delete(iv.get());
 
-                newPwd = passwordRepository.save(new Password(
+                newIV = ivRepository.save(new IV(
                         user,
-                        input.domain,
-                        input.username,
-                        input.password,
-                        input.versionNumber,
-                        input.deviceId,
-                        input.pwdSignature,
-                        input.timestamp,
-                        input.nonce,
-                        input.reqSignature
+                        input.hash,
+                        input.value
                 ));
 
-                System.out.println("Password updated. ID: " + newPwd.getId());
+                System.out.println("IV updated. ID: " + newIV.getId());
 
             } else {
+                newIV = ivRepository.save(new IV(
+                        user,
+                        input.hash,
+                        input.value
+                ));
 
-            */
-            Password newPwd = passwordRepository.save(new Password(
-                    user,
-                    input.domain,
-                    input.username,
-                    input.password,
-                    input.versionNumber,
-                    input.deviceId,
-                    input.pwdSignature,
-                    input.timestamp,
-                    input.nonce,
-                    input.reqSignature
-            ));
+                System.out.println("New IV registered. ID: " + newIV.getId());
+            }
 
-            System.out.println("New password registered. ID: " + newPwd.getId());
-
-            Password p = null;
+            IV _iv = null;
             try {
-                p = sec.getPasswordReadyToSend(newPwd);
+                _iv = sec.getIVReadyToSend(newIV);
             } catch (NoSuchAlgorithmException e) {
                 e.printStackTrace();
             } catch (UnrecoverableKeyException e) {
@@ -137,7 +112,7 @@ class PasswordRestController {
                 e.printStackTrace();
             }
 
-            return new ResponseEntity<>(p, null, HttpStatus.CREATED);
+            return new ResponseEntity<>(_iv, null, HttpStatus.CREATED);
         }).orElse(ResponseEntity.noContent().build());
     }
 

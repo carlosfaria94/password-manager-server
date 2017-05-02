@@ -50,25 +50,25 @@ class UserRestController {
         }
     }
 
-    @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Something is missing.")
+    @ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = "Something is missing.")
     @ExceptionHandler({NullPointerException.class})
     public void nullException() {
         System.err.println("Something is missing.");
     }
 
-    @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Cryptographic algorithm is not available.")
+    @ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = "Cryptographic algorithm is not available.")
     @ExceptionHandler({NoSuchAlgorithmException.class})
     public void noAlgorithm() {
         System.err.println("Cryptographic algorithm is not available.");
     }
 
-    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Invalid Public Key.")
+    @ResponseStatus(value = HttpStatus.NOT_ACCEPTABLE, reason = "Invalid Public Key.")
     @ExceptionHandler({InvalidPublicKeyException.class})
     public void invalidPublicKeyException() {
         System.err.println("Invalid Public Key.");
     }
 
-    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Invalid Signature.")
+    @ResponseStatus(value = HttpStatus.NOT_ACCEPTABLE, reason = "Invalid Signature.")
     @ExceptionHandler({SignatureException.class, ArrayIndexOutOfBoundsException.class})
     public void signatureException() {
         System.err.println("Invalid Signature.");

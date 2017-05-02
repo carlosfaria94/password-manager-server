@@ -57,8 +57,8 @@ class Security {
 
     private void verifyFreshness(String nonce, String timestamp) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException {
         //Avoids replay attack
-        if(!cryptoManager.isTimestampAndNonceValid(new Timestamp(Long.valueOf(timestamp)),
-            cryptoManager.convertBase64ToBinary(nonce))){
+        if (!cryptoManager.isTimestampAndNonceValid(new Timestamp(Long.valueOf(timestamp)),
+                cryptoManager.convertBase64ToBinary(nonce))) {
             throw new ExpiredTimestampException();
         }
     }
@@ -78,7 +78,7 @@ class Security {
                 password.nonce
         };
 
-        if(!cryptoManager.isValidSig(publicKey, myFields, password.reqSignature))
+        if (!cryptoManager.isValidSig(publicKey, myFields, password.reqSignature))
             throw new InvalidRequestSignatureException();
         verifyFreshness(password.nonce, password.timestamp);
     }
@@ -97,14 +97,14 @@ class Security {
                 password.nonce
         };
 
-        if(!cryptoManager.isValidSig(publicKey, myFields, password.reqSignature))
+        if (!cryptoManager.isValidSig(publicKey, myFields, password.reqSignature))
             throw new InvalidRequestSignatureException();
         verifyFreshness(password.nonce, password.timestamp);
     }
 
     void verifyPublicKeySignature(User user) throws ArrayIndexOutOfBoundsException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidRequestSignatureException {
         PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(user.publicKey)));
-        if(!cryptoManager.isValidSig(publicKey, new String[]{user.publicKey}, user.signature))
+        if (!cryptoManager.isValidSig(publicKey, new String[]{user.publicKey}, user.signature))
             throw new InvalidRequestSignatureException();
     }
 }

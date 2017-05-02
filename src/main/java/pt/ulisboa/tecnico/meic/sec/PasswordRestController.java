@@ -28,8 +28,8 @@ class PasswordRestController {
     private Security sec;
 
     @Autowired
-    PasswordRestController(PasswordRepository passwordRepository,
-                           UserRepository userRepository) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
+    PasswordRestController(PasswordRepository passwordRepository, UserRepository userRepository)
+            throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
         this.passwordRepository = passwordRepository;
         this.userRepository = userRepository;
         keystorePath = "keystore-" + serverName + ".jceks";
@@ -150,37 +150,37 @@ class PasswordRestController {
         return fingerprint;
     }
 
-    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request is not correctly signed")
+    @ResponseStatus(value = HttpStatus.NOT_ACCEPTABLE, reason = "Request is not correctly signed")
     @ExceptionHandler({InvalidRequestSignatureException.class})
     public void invalidRequestSignatureException() {
         System.err.println("Request is not correctly signed.");
     }
 
-    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Password is not correctly signed")
+    @ResponseStatus(value = HttpStatus.NOT_ACCEPTABLE, reason = "Password is not correctly signed")
     @ExceptionHandler({InvalidPasswordSignatureException.class})
     public void invalidPasswordSignatureException() {
         System.err.println("Password is not correctly signed.");
     }
 
-    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request expired")
+    @ResponseStatus(value = HttpStatus.NOT_ACCEPTABLE, reason = "Request expired")
     @ExceptionHandler({ExpiredTimestampException.class})
     public void expiredTimestampException() {
         System.err.println("Request expired.");
     }
 
-    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request already received")
+    @ResponseStatus(value = HttpStatus.NOT_ACCEPTABLE, reason = "Request already received")
     @ExceptionHandler({DuplicateRequestException.class})
     public void duplicateRequestException() {
         System.err.println("Request already received");
     }
 
-    @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Something is missing.")
+    @ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = "Something is missing.")
     @ExceptionHandler({NullPointerException.class})
     public void nullException() {
         System.err.println("Something is missing.");
     }
 
-    @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Cryptographic algorithm is not available.")
+    @ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = "Cryptographic algorithm is not available.")
     @ExceptionHandler({NoSuchAlgorithmException.class})
     public void noAlgorithm() {
         System.err.println("Cryptographic algorithm is not available.");

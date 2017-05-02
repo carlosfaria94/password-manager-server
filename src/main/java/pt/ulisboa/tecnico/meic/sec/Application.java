@@ -8,16 +8,16 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @SpringBootApplication
 public class Application {
 
-	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
-		System.out.println();
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+        System.out.println();
+    }
 }
 
 @ResponseStatus(HttpStatus.NOT_FOUND)
 class UserNotFoundException extends RuntimeException {
 
-	public UserNotFoundException() {
-		super("Could not find a user associated with the Public Key.");
-	}
+    public UserNotFoundException() {
+        super("Could not find a user associated with the Public Key.");
+    }
 }

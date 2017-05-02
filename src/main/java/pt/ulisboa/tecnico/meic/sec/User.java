@@ -7,28 +7,16 @@ import java.util.Set;
 @Entity
 public class User {
 
+    public String fingerprint;
+    @Transient
+    public String signature;
+    @Transient
+    public String publicKey;
     @Id
     @GeneratedValue
     private Integer id;
-
-    public String fingerprint;
-
-    @Transient
-    public String signature;
-
-    @Transient
-    public String publicKey;
-
     @OneToMany(mappedBy = "user")
     private Set<Password> passwords = new HashSet<>();
-
-    public Integer getId() {
-        return id;
-    }
-
-    public Set<Password> getPasswords() {
-        return passwords;
-    }
 
     public User(String fingerprint) {
         this.fingerprint = fingerprint;
@@ -40,6 +28,14 @@ public class User {
     }
 
     User() { // jpa only
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public Set<Password> getPasswords() {
+        return passwords;
     }
 
     @Override

@@ -7,5 +7,6 @@ import java.util.Optional;
 
 public interface PasswordRepository extends JpaRepository<Password, Long> {
     Collection<Password> findByUserFingerprint(String fingerprint);
+
     Optional<Password> findByUserFingerprintAndDomainAndUsername(String fingerprint, String domain, String username);
 }

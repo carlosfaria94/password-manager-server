@@ -7,26 +7,13 @@ import javax.persistence.*;
 @Entity
 public class Password {
 
-    @JsonIgnore
-    @ManyToOne
-    private User user;
-
-    @Id
-    @GeneratedValue
-    private Integer id;
-
     @Transient
     public String publicKey;
-
     public String domain;
     public String username;
     public String password;
-
-
-
     @Column(length = 500)
     public String pwdSignature;
-
     public String deviceId;
     public String versionNumber;
     public String timestamp;
@@ -34,14 +21,12 @@ public class Password {
     public String nonce;
     @Transient
     public String reqSignature;
-
-    public User getUser() {
-        return user;
-    }
-
-    public Integer getId() {
-        return id;
-    }
+    @JsonIgnore
+    @ManyToOne
+    private User user;
+    @Id
+    @GeneratedValue
+    private Integer id;
 
     Password() { // jpa only
     }
@@ -81,6 +66,14 @@ public class Password {
         this.timestamp = timestamp;
         this.nonce = nonce;
         this.reqSignature = reqSignature;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public Integer getId() {
+        return id;
     }
 
     @Override

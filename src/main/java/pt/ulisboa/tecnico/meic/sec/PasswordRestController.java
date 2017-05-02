@@ -74,39 +74,6 @@ class PasswordRestController {
 
         return this.userRepository.findByFingerprint(fingerprint).map(user -> {
 
-            /*
-             To update the password, we first search for user passwords and see if domain,username already exist in DB.
-             If true, we delete the pwd and save the new pwd
-             If false, no pwd founded, so we create a new pwd
-              */
-            /*Optional<Password> pwd = passwordRepository.findByUserFingerprintAndDomainAndUsername(
-                    fingerprint,
-                    input.domain,
-                    input.username
-            );
-            if (pwd.isPresent()) {
-                System.out.println("Password já existe, será substituída");
-
-                passwordRepository.delete(pwd.get());
-
-                newPwd = passwordRepository.save(new Password(
-                        user,
-                        input.domain,
-                        input.username,
-                        input.password,
-                        input.versionNumber,
-                        input.deviceId,
-                        input.pwdSignature,
-                        input.timestamp,
-                        input.nonce,
-                        input.reqSignature
-                ));
-
-                System.out.println("Password updated. ID: " + newPwd.getId());
-
-            } else {
-
-            */
             Password newPwd = passwordRepository.save(new Password(
                     user,
                     input.domain,

@@ -119,15 +119,11 @@ class PasswordRestController {
                     Password p = null;
                     try {
                         p = sec.getPasswordReadyToSend(newPwd);
-                    } catch (NoSuchAlgorithmException e) {
-                        e.printStackTrace();
-                    } catch (UnrecoverableKeyException e) {
-                        e.printStackTrace();
-                    } catch (SignatureException e) {
-                        e.printStackTrace();
-                    } catch (KeyStoreException e) {
-                        e.printStackTrace();
-                    } catch (InvalidKeyException e) {
+                    } catch (NoSuchAlgorithmException |
+                            UnrecoverableKeyException |
+                            SignatureException |
+                            InvalidKeyException |
+                            KeyStoreException e) {
                         e.printStackTrace();
                     }
 

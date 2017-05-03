@@ -24,6 +24,7 @@ class PasswordRestController {
     private final String keystorePath;
     private final String keystorePwd;
     private final String serverName = System.getenv("SERVER_NAME");
+    private ServerCallsPool call;
 
     private Security sec;
 
@@ -35,6 +36,7 @@ class PasswordRestController {
         keystorePath = "keystore-" + serverName + ".jceks";
         keystorePwd = "batata";
         sec = new Security(keystorePath, keystorePwd.toCharArray());
+        call = new ServerCallsPool();
     }
 
     @RequestMapping(value = "/retrievePassword", method = RequestMethod.POST)
@@ -65,15 +67,21 @@ class PasswordRestController {
 
 
     @RequestMapping(value = "/password", method = RequestMethod.PUT)
-    ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
+    ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException, IOException {
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordInsertSignature(input);
 
         System.out.println(input);
 
-        return this.userRepository.findByFingerprint(fingerprint).map(user -> {
+        Password[] retrieved = call.putPassword(input);
 
-            Password newPwd = passwordRepository.save(new Password(
+        if (!enoughResponses(retrieved)) {
+            System.out.println("Not enough responses from other replicas");
+            return new ResponseEntity<>(null, null, HttpStatus.CONFLICT);
+        } else {
+            return this.userRepository.findByFingerprint(fingerprint).map(user -> {
+
+                Password newPwd = passwordRepository.save(new Password(
                     user,
                     input.domain,
                     input.username,
@@ -84,27 +92,22 @@ class PasswordRestController {
                     input.timestamp,
                     input.nonce,
                     input.reqSignature
-            ));
+                ));
 
-            System.out.println("New password registered. ID: " + newPwd.getId());
+                System.out.println("New password registered. ID: " + newPwd.getId());
 
-            Password p = null;
-            try {
-                p = sec.getPasswordReadyToSend(newPwd);
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            } catch (UnrecoverableKeyException e) {
-                e.printStackTrace();
-            } catch (SignatureException e) {
-                e.printStackTrace();
-            } catch (KeyStoreException e) {
-                e.printStackTrace();
-            } catch (InvalidKeyException e) {
-                e.printStackTrace();
-            }
+                Password p = null;
+                try {
+                    p = sec.getPasswordReadyToSend(newPwd);
+                } catch (NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException | KeyStoreException | InvalidKeyException e) {
+                    e.printStackTrace();
+                }
 
-            return new ResponseEntity<>(p, null, HttpStatus.CREATED);
-        }).orElse(ResponseEntity.noContent().build());
+                return new ResponseEntity<>(p, null, HttpStatus.CREATED);
+
+            }).orElse(new ResponseEntity<>(null, null, HttpStatus.CONFLICT)); // PWD already exist
+
+        }
     }
 
     private boolean enoughResponses(Object[] retrieved) {
@@ -133,6 +136,12 @@ class PasswordRestController {
         this.userRepository.findByFingerprint(fingerprint).orElseThrow(
                 () -> new UserNotFoundException());
         return fingerprint;
+    }
+
+    @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Something is wrong.")
+    @ExceptionHandler({IOException.class})
+    public void ioException() {
+        System.err.println("Something is wrong.");
     }
 
     @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request is not correctly signed")

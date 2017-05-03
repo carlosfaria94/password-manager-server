@@ -73,7 +73,7 @@ class PasswordRestController {
 
         System.out.println(input);
 
-        Password[] retrieved = call.putPassword(input);
+        Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(input));
 
         if (!enoughResponses(retrieved)) {
             System.out.println("Not enough responses from other replicas");

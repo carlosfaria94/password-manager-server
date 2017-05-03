@@ -75,6 +75,8 @@ def main():
 	
 	print("Stopping replicas")
 	stop_threads()
+	
+	sys.exit(0)
 
 if __name__ == "__main__":
 	main()

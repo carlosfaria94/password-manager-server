@@ -18,14 +18,8 @@ import java.util.ArrayList;
 
 @RestController
 class PasswordRestController {
-
     private final PasswordRepository passwordRepository;
-
     private final UserRepository userRepository;
-    private final String keystorePath;
-    private final String keystorePwd;
-    private final String serverName = System.getenv("SERVER_NAME");
-
     private Security sec;
 
     @Autowired
@@ -33,15 +27,18 @@ class PasswordRestController {
                            UserRepository userRepository) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
         this.passwordRepository = passwordRepository;
         this.userRepository = userRepository;
-        keystorePath = "keystore-" + serverName + ".jceks";
-        keystorePwd = "batata";
+
+        String serverName = System.getenv("SERVER_NAME");
+        String keystorePath = "keystore-" + serverName + ".jceks";
+        String keystorePwd = "batata";
+
         sec = new Security(keystorePath, keystorePwd.toCharArray());
     }
 
     @RequestMapping(value = "/retrievePassword", method = RequestMethod.POST)
     ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
-        sec.verifyPasswordFetchSignature(input);
+        sec.verifyFetchSignature(input);
 
         ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findByUserFingerprintAndDomainAndUsername(
                 fingerprint,
@@ -59,7 +56,7 @@ class PasswordRestController {
                     maximum = p;
                 }
             }
-            Password p = sec.getPasswordReadyToSend(maximum);
+            Password p = (Password) sec.getEntityReadyToSend(maximum);
             return new ResponseEntity<>(p, null, HttpStatus.OK);
         }
     }
@@ -68,11 +65,11 @@ class PasswordRestController {
     @RequestMapping(value = "/password", method = RequestMethod.PUT)
     ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
-        sec.verifyPasswordInsertSignature(input);
+        sec.verifyInsertSignature(input);
 
         System.out.println(input);
 
-        return this.userRepository.findByFingerprint(fingerprint).map(user -> {
+        return this.userRepository.findByFingerprint(fingerprint).map((User user) -> {
 
             Password newPwd = passwordRepository.save(new Password(
                     user,
@@ -81,6 +78,7 @@ class PasswordRestController {
                     input.password,
                     input.versionNumber,
                     input.deviceId,
+                    input.iv,
                     input.pwdSignature,
                     input.timestamp,
                     input.nonce,
@@ -91,16 +89,9 @@ class PasswordRestController {
 
             Password p = null;
             try {
-                p = sec.getPasswordReadyToSend(newPwd);
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            } catch (UnrecoverableKeyException e) {
-                e.printStackTrace();
-            } catch (SignatureException e) {
-                e.printStackTrace();
-            } catch (KeyStoreException e) {
-                e.printStackTrace();
-            } catch (InvalidKeyException e) {
+                p = (Password) sec.getEntityReadyToSend(newPwd);
+            } catch (NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | InvalidKeyException |
+                    SignatureException | NullPointerException e) {
                 e.printStackTrace();
             }
 

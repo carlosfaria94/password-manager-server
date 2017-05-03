@@ -17,14 +17,8 @@ import java.util.Optional;
 
 @RestController
 class IVRestController {
-
     private final IVRepository ivRepository;
-
     private final UserRepository userRepository;
-    private final String keystorePath;
-    private final String keystorePwd;
-    private final String serverName = System.getenv("SERVER_NAME");
-
     private Security sec;
 
     @Autowired
@@ -32,22 +26,23 @@ class IVRestController {
                      UserRepository userRepository) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
         this.ivRepository = ivRepository;
         this.userRepository = userRepository;
-        keystorePath = "keystore-" + serverName + ".jceks";
-        keystorePwd = "batata";
+        String serverName = System.getenv("SERVER_NAME");
+        String keystorePath = "keystore-" + serverName + ".jceks";
+        String keystorePwd = "batata";
         sec = new Security(keystorePath, keystorePwd.toCharArray());
     }
 
     @RequestMapping(value = "/retrieveIv", method = RequestMethod.POST)
     ResponseEntity<?> retrieveIv(@RequestBody IV input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
-        sec.verifyIVFetchSignature(input);
+        sec.verifyFetchSignature(input);
 
         Optional<IV> iv = this.ivRepository.findByUserFingerprintAndHash(
                 fingerprint,
                 input.hash
         );
         if (iv.isPresent()) {
-            IV _iv = sec.getIVReadyToSend(iv.get());
+            IV _iv = (IV) sec.getEntityReadyToSend(iv.get());
             return new ResponseEntity<>(_iv, null, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
@@ -58,7 +53,7 @@ class IVRestController {
     @RequestMapping(value = "/iv", method = RequestMethod.PUT)
     ResponseEntity<?> addIV(@RequestBody IV input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
-        sec.verifyIVInsertSignature(input);
+        sec.verifyInsertSignature(input);
 
         System.out.println(input);
 
@@ -99,16 +94,9 @@ class IVRestController {
 
             IV _iv = null;
             try {
-                _iv = sec.getIVReadyToSend(newIV);
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            } catch (UnrecoverableKeyException e) {
-                e.printStackTrace();
-            } catch (SignatureException e) {
-                e.printStackTrace();
-            } catch (KeyStoreException e) {
-                e.printStackTrace();
-            } catch (InvalidKeyException e) {
+                _iv = (IV) sec.getEntityReadyToSend(newIV);
+            } catch (NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | SignatureException |
+                    InvalidKeyException | NullPointerException e) {
                 e.printStackTrace();
             }
 

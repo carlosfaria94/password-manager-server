@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import javax.persistence.*;
 
 @Entity
-public class IV {
+public class IV extends SecureEntity {
 
     @JsonIgnore
     @ManyToOne
@@ -47,6 +47,33 @@ public class IV {
     public IV(String hash, String value) {
         this.hash = hash;
         this.value = value;
+    }
+
+    @Override
+    public String[] getInsertFields() {
+        return new String[]{
+                publicKey,
+                hash,
+                value,
+                timestamp,
+                nonce
+        };
+    }
+
+    @Override
+    public String[] getRetrieveFields() {
+        return new String[0];
+    }
+
+    @Override
+    public String[] getFieldsReadyToSend(){
+        return new String[]{
+                publicKey,
+                hash,
+                value,
+                timestamp,
+                nonce,
+        };
     }
 
     @Override

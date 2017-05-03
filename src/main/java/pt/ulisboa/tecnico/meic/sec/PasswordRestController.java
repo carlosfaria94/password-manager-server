@@ -54,8 +54,8 @@ class PasswordRestController {
         } else {
             Password maximum = passwords.get(0);
             for (Password p : passwords) {
-                if(Timestamp.valueOf(p.timestamp).getTime() >
-                        Timestamp.valueOf(maximum.timestamp).getTime()) {
+                if(Long.valueOf(p.timestamp) >
+                        Long.valueOf(maximum.timestamp)) {
                     maximum = p;
                 }
             }

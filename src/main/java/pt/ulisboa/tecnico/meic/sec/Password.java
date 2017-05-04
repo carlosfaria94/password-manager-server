@@ -45,6 +45,19 @@ public class Password {
     Password() { // jpa only
     }
 
+    public Password(Password another){
+        this.publicKey = another.publicKey;
+        this.domain = another.domain;
+        this.username = another.username;
+        this.password = another.password;
+        this.pwdSignature = another.pwdSignature;
+        this.deviceId = another.deviceId;
+        this.versionNumber = another.versionNumber;
+        this.timestamp = another.timestamp;
+        this.nonce = another.nonce;
+        this.reqSignature = another.reqSignature;
+    }
+
     public Password(User user, String domain, String username, String password, String versionNumber, String deviceId, String pwdSignature, String timestamp, String nonce, String reqSignature) {
         this.domain = domain;
         this.username = username;
@@ -91,9 +104,9 @@ public class Password {
                 ", domain='" + domain + '\'' +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
-                ", pwdSignature='" + pwdSignature + '\'' +
-                ", deviceId='" + deviceId + '\'' +
                 ", versionNumber='" + versionNumber + '\'' +
+                ", deviceId='" + deviceId + '\'' +
+                ", pwdSignature='" + pwdSignature + '\'' +
                 ", timestamp='" + timestamp + '\'' +
                 ", nonce='" + nonce + '\'' +
                 ", reqSignature='" + reqSignature + '\'' +

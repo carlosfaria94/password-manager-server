@@ -71,21 +71,28 @@ public class ServerCallsPool {
             threads[i] = new Thread(() -> {
                 try {
                     passwordsResponse[finalI] = singleServerCalls[finalI].putPassword(pwd);
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    e.printStackTrace(System.out);
+                    System.out.println(e.getMessage());
                     // If a thread crashed, it's probably connection problems
                 }
             });
         }
+        System.out.println("Montei as threads");
         for (Thread thread : threads) {
             thread.start();
         }
+        System.out.println("Comecei as threads");
+
         for (Thread thread : threads) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                e.printStackTrace(System.out);
             }
         }
+        System.out.println("acabou " + passwordsResponse[0]);
+
         return passwordsResponse;
     }
 

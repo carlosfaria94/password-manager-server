@@ -73,7 +73,7 @@ class PasswordRestController {
 
         System.out.println(input);
 
-        Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(input));
+        Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
 
         if (!enoughResponses(retrieved)) {
             System.out.println("Not enough responses from other replicas");
@@ -105,16 +105,17 @@ class PasswordRestController {
 
                 return new ResponseEntity<>(p, null, HttpStatus.CREATED);
 
-            }).orElse(new ResponseEntity<>(null, null, HttpStatus.CONFLICT)); // PWD already exist
+            }).orElse(new ResponseEntity<>(new Password(), null, HttpStatus.CONFLICT)); // PWD already exist
 
         }
     }
 
     private boolean enoughResponses(Object[] retrieved) {
-        int n = 3;//call.size();
+        int n = call.size();
         /* If there were more responses than the number of faults we tolerate, then we will proceed.
         *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
         */
+        System.out.println(countNotNull(retrieved));
         return countNotNull(retrieved) > (2.0 / 3.0) * n - 1.0 / 6.0;
     }
 

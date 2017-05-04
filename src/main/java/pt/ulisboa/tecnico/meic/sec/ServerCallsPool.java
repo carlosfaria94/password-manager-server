@@ -3,6 +3,7 @@ package pt.ulisboa.tecnico.meic.sec;
 import java.io.IOException;
 
 public class ServerCallsPool {
+    private final String thisPort = System.getenv("SERVER_PORT");
     private int initialPort = 3001;
     private int finalPort = 3004;
 
@@ -28,8 +29,9 @@ public class ServerCallsPool {
     }
 
     private void init() {
-        singleServerCalls = new SingleServerCalls[finalPort - initialPort + 1];
+        singleServerCalls = new SingleServerCalls[finalPort - initialPort];
         for (int i = 0; i < singleServerCalls.length; i++) {
+            if (initialPort + i == Integer.valueOf(thisPort)) continue;
             singleServerCalls[i] = new SingleServerCalls(initialPort + i);
         }
     }

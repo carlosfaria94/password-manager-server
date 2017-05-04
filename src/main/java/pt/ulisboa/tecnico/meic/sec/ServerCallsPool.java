@@ -1,6 +1,5 @@
 package pt.ulisboa.tecnico.meic.sec;
 
-import javax.validation.constraints.DecimalMax;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -36,7 +35,7 @@ public class ServerCallsPool {
             System.out.println("PORT: " + i + " vs " + thisPort);
             if (i == Integer.valueOf(thisPort)) {
                 System.out.println("Skipping " + i);
-            }else {
+            } else {
                 singleServerCalls.add(new SingleServerCalls(i));
             }
         }
@@ -79,7 +78,7 @@ public class ServerCallsPool {
                 try {
                     passwordsResponse[finalI] = singleServerCalls.get(finalI).putPassword(pwd);
                 } catch (Exception e) {
-                   // e.printStackTrace(System.out);
+                    // e.printStackTrace(System.out);
                     System.out.println(e.getMessage());
                     // If a thread crashed, it's probably connection problems
                 }

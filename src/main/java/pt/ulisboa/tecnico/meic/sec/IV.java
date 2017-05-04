@@ -7,17 +7,8 @@ import javax.persistence.*;
 @Entity
 public class IV {
 
-    @JsonIgnore
-    @ManyToOne
-    private User user;
-
-    @Id
-    @GeneratedValue
-    private Integer id;
-
     @Transient
     public String publicKey;
-
     public String hash;
     public String value;
     @Transient
@@ -26,14 +17,12 @@ public class IV {
     public String nonce;
     @Transient
     public String reqSignature;
-
-    public User getUser() {
-        return user;
-    }
-
-    public Integer getId() {
-        return id;
-    }
+    @JsonIgnore
+    @ManyToOne
+    private User user;
+    @Id
+    @GeneratedValue
+    private Integer id;
 
     IV() { // jpa only
     }
@@ -47,6 +36,14 @@ public class IV {
     public IV(String hash, String value) {
         this.hash = hash;
         this.value = value;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public Integer getId() {
+        return id;
     }
 
     @Override

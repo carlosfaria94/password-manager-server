@@ -51,17 +51,21 @@ class PasswordRestController {
                 input.username
         ));
 
+        System.out.println("BATATA");
         if (passwords.isEmpty()) {
             return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
         } else {
             Password maximum = passwords.get(0);
+            System.out.println("YEY");
             for (Password p : passwords) {
-                if(Long.valueOf(p.timestamp) >
+                if (Long.valueOf(p.timestamp) >
                         Long.valueOf(maximum.timestamp)) {
                     maximum = p;
                 }
             }
-            Password p = sec.getPasswordReadyToSend(maximum);
+            System.out.println("UPS!");
+            Password p = sec.getPasswordReadyToSendToClient(new Password(maximum));
+            System.out.println("RETRIEVING\n" + p);
             return new ResponseEntity<>(p, null, HttpStatus.OK);
         }
     }
@@ -81,7 +85,7 @@ class PasswordRestController {
 
         if (pwd.isPresent()) {
             System.out.println("Password already exists here!");
-            return new ResponseEntity<>(pwd.get(), null, HttpStatus.CONFLICT);
+            return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(pwd.get()), null, HttpStatus.CONFLICT);
         } else {
             Optional<User> user = this.userRepository.findByFingerprint(fingerprint);
             if (user.isPresent()) {
@@ -108,7 +112,8 @@ class PasswordRestController {
                     this.passwordRepository.deleteById(newPwd.getId());
                     return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
                 } else {
-                    return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
+                    //sort e bla bla
+                    return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(newPwd), null, HttpStatus.CREATED);
                 }
             } else {
                 System.out.println(serverName + ": User already registered");
@@ -122,6 +127,7 @@ class PasswordRestController {
         /* If there were more responses than the number of faults we tolerate, then we will proceed.
         *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
         */
+        // - 1 because I am always right
         System.out.println(countNotNull(retrieved));
         return countNotNull(retrieved) > (2.0 / 3.0) * n - 1.0 / 6.0 - 1;
     }
@@ -146,43 +152,43 @@ class PasswordRestController {
         return fingerprint;
     }
 
-    @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Something is wrong.")
+    @ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = "Something is wrong.")
     @ExceptionHandler({IOException.class})
     public void ioException() {
         System.err.println("Something is wrong.");
     }
 
-    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request is not correctly signed")
+    @ResponseStatus(value = HttpStatus.NOT_ACCEPTABLE, reason = "Request is not correctly signed")
     @ExceptionHandler({InvalidRequestSignatureException.class})
     public void invalidRequestSignatureException() {
         System.err.println("Request is not correctly signed.");
     }
 
-    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Password is not correctly signed")
+    @ResponseStatus(value = HttpStatus.NOT_ACCEPTABLE, reason = "Password is not correctly signed")
     @ExceptionHandler({InvalidPasswordSignatureException.class})
     public void invalidPasswordSignatureException() {
         System.err.println("Password is not correctly signed.");
     }
 
-    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request expired")
+    @ResponseStatus(value = HttpStatus.NOT_ACCEPTABLE, reason = "Request expired")
     @ExceptionHandler({ExpiredTimestampException.class})
     public void expiredTimestampException() {
         System.err.println("Request expired.");
     }
 
-    @ResponseStatus(value= HttpStatus.NOT_ACCEPTABLE, reason="Request already received")
+    @ResponseStatus(value = HttpStatus.NOT_ACCEPTABLE, reason = "Request already received")
     @ExceptionHandler({DuplicateRequestException.class})
     public void duplicateRequestException() {
         System.err.println("Request already received");
     }
 
-    @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Something is missing.")
+    @ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = "Something is missing.")
     @ExceptionHandler({NullPointerException.class})
     public void nullException() {
         System.err.println("Something is missing.");
     }
 
-    @ResponseStatus(value= HttpStatus.BAD_REQUEST, reason="Cryptographic algorithm is not available.")
+    @ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = "Cryptographic algorithm is not available.")
     @ExceptionHandler({NoSuchAlgorithmException.class})
     public void noAlgorithm() {
         System.err.println("Cryptographic algorithm is not available.");

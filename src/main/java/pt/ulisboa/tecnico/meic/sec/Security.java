@@ -56,6 +56,31 @@ class Security {
         return password;
     }
 
+    Password getPasswordReadyToSendToClient(Password password) throws NoSuchAlgorithmException, UnrecoverableKeyException, SignatureException, KeyStoreException, InvalidKeyException {
+        password.publicKey = cryptoManager.convertBinaryToBase64(
+                CryptoUtilities.getPublicKeyFromKeystore(keyStore, "asymm", "batata".toCharArray()).getEncoded());
+        password.timestamp = String.valueOf(cryptoManager.getActualTimestamp().getTime());
+        password.nonce = cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32));
+        password.serverPublicKey = null;
+        System.out.println("Ta na hora!");
+        String[] fieldsToSend = new String[]{
+                password.publicKey,
+                password.domain,
+                password.username,
+                password.password,
+                password.versionNumber,
+                password.deviceId,
+                password.pwdSignature,
+                password.timestamp,
+                password.nonce,
+        };
+
+        password.reqSignature = cryptoManager.convertBinaryToBase64(
+                cryptoManager.signFields(fieldsToSend, keyStore, "asymm", "batata".toCharArray()));
+
+        return password;
+    }
+
     IV getIVReadyToSend(IV iv) throws NoSuchAlgorithmException, UnrecoverableKeyException, SignatureException, KeyStoreException, InvalidKeyException {
         iv.publicKey = cryptoManager.convertBinaryToBase64(
                 CryptoUtilities.getPublicKeyFromKeystore(keyStore, "asymm", "batata".toCharArray()).getEncoded());
@@ -136,7 +161,7 @@ class Security {
                 iv.nonce
         };
 
-        if(!cryptoManager.isValidSig(publicKey, myFields, iv.reqSignature))
+        if (!cryptoManager.isValidSig(publicKey, myFields, iv.reqSignature))
             throw new InvalidRequestSignatureException();
         verifyFreshness(iv.nonce, iv.timestamp);
     }
@@ -174,7 +199,7 @@ class Security {
                 iv.nonce
         };
 
-        if(!cryptoManager.isValidSig(publicKey, myFields, iv.reqSignature))
+        if (!cryptoManager.isValidSig(publicKey, myFields, iv.reqSignature))
             throw new InvalidRequestSignatureException();
         verifyFreshness(iv.nonce, iv.timestamp);
     }

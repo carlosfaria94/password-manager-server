@@ -13,4 +13,5 @@ public interface PasswordRepository extends JpaRepository<Password, Long> {
     );
 
     void deleteById(Integer id);
+
 }

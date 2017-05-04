@@ -1,6 +1,5 @@
 package pt.ulisboa.tecnico.meic.sec;
 
-import com.sun.deploy.util.ArrayUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +10,6 @@ import pt.ulisboa.tecnico.meic.sec.exception.InvalidPasswordSignatureException;
 import pt.ulisboa.tecnico.meic.sec.exception.InvalidRequestSignatureException;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
@@ -115,9 +113,20 @@ class PasswordRestController {
                 } else {
                     Password[] sortedQuorum = sortForMostRecentPassword(quorum);
                     final Password selectedPassword = sortedQuorum[0];
-                    // replace pwd
-                    return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(
-                            new Password((selectedPassword))), null, HttpStatus.CREATED);
+                    this.passwordRepository.deleteById(newPwd.getId());
+                    Password _newPwd = this.passwordRepository.save(new Password(
+                            user.get(),
+                            selectedPassword.domain,
+                            selectedPassword.username,
+                            selectedPassword.password,
+                            selectedPassword.versionNumber,
+                            selectedPassword.deviceId,
+                            selectedPassword.pwdSignature,
+                            selectedPassword.timestamp,
+                            selectedPassword.nonce,
+                            selectedPassword.reqSignature
+                    ));
+                    return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(_newPwd), null, HttpStatus.CREATED);
                 }
             } else {
                 System.out.println(serverName + ": User already registered");

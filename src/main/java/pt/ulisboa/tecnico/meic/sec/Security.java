@@ -32,20 +32,21 @@ class Security {
     }
 
     Password getPasswordReadyToSend(Password password) throws NoSuchAlgorithmException, UnrecoverableKeyException, SignatureException, KeyStoreException, InvalidKeyException {
-        password.publicKey = cryptoManager.convertBinaryToBase64(
+        password.serverPublicKey = cryptoManager.convertBinaryToBase64(
                 CryptoUtilities.getPublicKeyFromKeystore(keyStore, "asymm", "batata".toCharArray()).getEncoded());
         password.timestamp = String.valueOf(cryptoManager.getActualTimestamp().getTime());
         password.nonce = cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32));
 
         String[] fieldsToSend = new String[]{
-            password.publicKey,
-            password.domain,
-            password.username,
-            password.password,
-            password.versionNumber,
-            password.pwdSignature,
-            password.timestamp,
-            password.nonce,
+                password.serverPublicKey,
+                password.publicKey,
+                password.domain,
+                password.username,
+                password.password,
+                password.versionNumber,
+                password.pwdSignature,
+                password.timestamp,
+                password.nonce,
         };
 
         password.reqSignature = cryptoManager.convertBinaryToBase64(
@@ -85,18 +86,34 @@ class Security {
 
     void verifyPasswordInsertSignature(Password password) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidPasswordSignatureException, InvalidRequestSignatureException {
         PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey)));
+        String[] myFields;
 
-        String[] myFields = new String[]{
-                password.publicKey,
-                password.domain,
-                password.username,
-                password.password,
-                password.versionNumber,
-                password.deviceId,
-                password.pwdSignature,
-                password.timestamp,
-                password.nonce
-        };
+        if (password.serverPublicKey == null) {
+            myFields = new String[]{
+                    password.publicKey,
+                    password.domain,
+                    password.username,
+                    password.password,
+                    password.versionNumber,
+                    password.deviceId,
+                    password.pwdSignature,
+                    password.timestamp,
+                    password.nonce
+            };
+        } else {
+            myFields = new String[]{
+                    password.serverPublicKey,
+                    password.publicKey,
+                    password.domain,
+                    password.username,
+                    password.password,
+                    password.versionNumber,
+                    password.deviceId,
+                    password.pwdSignature,
+                    password.timestamp,
+                    password.nonce
+            };
+        }
 
         if (!cryptoManager.isValidSig(publicKey, myFields, password.reqSignature))
             throw new InvalidRequestSignatureException();

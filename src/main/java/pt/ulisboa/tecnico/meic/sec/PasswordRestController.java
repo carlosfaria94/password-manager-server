@@ -73,47 +73,48 @@ class PasswordRestController {
 
         System.out.println(input);
 
-        synchronized (this) {
-            Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
-                    fingerprint,
-                    input.domain,
-                    input.username,
-                    input.versionNumber);
+        Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
+                fingerprint,
+                input.domain,
+                input.username,
+                input.versionNumber);
 
-            if (pwd.isPresent()) {
-                System.out.println("Password already exists here!");
-                return new ResponseEntity<>(pwd.get(), null, HttpStatus.CONFLICT);
+        System.out.println(pwd);
+
+        if (pwd.isPresent()) {
+            System.out.println(pwd.get());
+            System.out.println("Password already exists here!");
+            return new ResponseEntity<>(pwd.get(), null, HttpStatus.CONFLICT);
+        } else {
+            // #flood
+            Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
+
+            if (!enoughResponses(retrieved)) {
+                System.out.println(serverName + ": Not enough responses from other replicas");
+                return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
             } else {
-                // #flood
-                Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
+                return this.userRepository.findByFingerprint(fingerprint).map(user -> {
 
-                if (!enoughResponses(retrieved)) {
-                    System.out.println(serverName + ": Not enough responses from other replicas");
-                    return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
-                } else {
-                    return this.userRepository.findByFingerprint(fingerprint).map(user -> {
+                    Password newPwd = passwordRepository.save(new Password(
+                            user,
+                            input.domain,
+                            input.username,
+                            input.password,
+                            input.versionNumber,
+                            input.deviceId,
+                            input.pwdSignature,
+                            input.timestamp,
+                            input.nonce,
+                            input.reqSignature
+                    ));
 
-                        Password newPwd = passwordRepository.save(new Password(
-                                user,
-                                input.domain,
-                                input.username,
-                                input.password,
-                                input.versionNumber,
-                                input.deviceId,
-                                input.pwdSignature,
-                                input.timestamp,
-                                input.nonce,
-                                input.reqSignature
-                        ));
-
-                        System.out.println("New password registered. ID: " + newPwd.getId());
+                    System.out.println("New password registered. ID: " + newPwd.getId());
 
 
-                        return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
+                    return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
 
-                    }).orElse(new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND));
-                    // user does not exist
-                }
+                }).orElse(new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND));
+                // user does not exist
             }
         }
     }

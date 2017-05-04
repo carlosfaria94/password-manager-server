@@ -17,6 +17,8 @@ public class Password {
 
     @Transient
     public String publicKey;
+    @Transient
+    public String serverPublicKey;
 
     public String domain;
     public String username;
@@ -83,6 +85,20 @@ public class Password {
     }
 
     public Password(String publicKey, String domain, String username, String password, String versionNumber, String deviceId, String pwdSignature, String timestamp, String nonce, String reqSignature) {
+        this.publicKey = publicKey;
+        this.domain = domain;
+        this.username = username;
+        this.password = password;
+        this.versionNumber = versionNumber;
+        this.deviceId = deviceId;
+        this.pwdSignature = pwdSignature;
+        this.timestamp = timestamp;
+        this.nonce = nonce;
+        this.reqSignature = reqSignature;
+    }
+
+    public Password(String serverPublicKey, String publicKey, String domain, String username, String password, String versionNumber, String deviceId, String pwdSignature, String timestamp, String nonce, String reqSignature) {
+        this.serverPublicKey = serverPublicKey;
         this.publicKey = publicKey;
         this.domain = domain;
         this.username = username;

@@ -134,6 +134,7 @@ public class Password implements Comparable{
 
     @Override
     public int compareTo(Object o) {
+        System.out.println(o.getClass().getSimpleName());
         if (o instanceof Password) {
             Password other = (Password) o;
             int comparison = Integer.valueOf(other.versionNumber)

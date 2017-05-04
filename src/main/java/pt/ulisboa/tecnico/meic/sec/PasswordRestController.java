@@ -15,6 +15,7 @@ import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -45,14 +46,15 @@ class PasswordRestController {
     ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordFetchSignature(input);
+        System.out.println("Cenas##"+fingerprint+":"+input.domain+":"+input.username);
+        ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findTop10ByOrderById());
 
-        ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findByUserFingerprintAndDomainAndUsername(
-                fingerprint,
-                input.domain,
-                input.username
-        ));
+        System.out.println(passwords);
+
+        System.out.println(this.passwordRepository.findAll());
 
         if (passwords.isEmpty()) {
+            System.out.println("Nao encontreu nada!");
             return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
         } else {
             Password maximum = passwords.get(0);
@@ -103,19 +105,32 @@ class PasswordRestController {
                 // #floodAndBeCool
                 Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
 
-                Password[] quorum = Arrays.copyOf(retrieved, retrieved.length + 1);
-                quorum[quorum.length - 1] = newPwd;
+                //for(Password p : retrieved) System.out.println(p);
+                ArrayList<Password> passwordList = new ArrayList<>(Arrays.asList(retrieved));
+                passwordList.add(newPwd);
 
-                if (!enoughResponses(quorum)) {
+                //System.out.println(passwordList);
+                if (!enoughResponses(passwordList.toArray())) {
                     System.out.println(serverName + ": Not enough responses from other replicas");
                     this.passwordRepository.deleteById(newPwd.getId());
                     return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
                 } else {
-                    Password[] sortedQuorum = sortForMostRecentPassword(quorum);
-                    final Password selectedPassword = sortedQuorum[0];
+                    Object[] sortedQuorum = sortForMostRecentPassword(passwordList.toArray());
+                    final Password selectedPassword = (Password) sortedQuorum[0];
                     selectedPassword.setId(newPwd.getId());
                     Password _newPwd = this.passwordRepository.save(selectedPassword);
-                    return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(_newPwd), null, HttpStatus.CREATED);
+                    System.out.println("BATATA: "+ fingerprint+"##"+_newPwd.domain+"##" + _newPwd.username);
+                    ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findByUserFingerprintAndDomainAndUsername(
+                            fingerprint,
+                            input.domain,
+                            input.username
+                    ));
+                    if (!passwords.isEmpty()) {
+                        System.out.println(passwords);
+                    }
+                    // System.out.println(serverName + ": New password really registered. ID: " + _newPwd.getId());
+                    return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(_newPwd)
+                            , null, HttpStatus.CREATED);
                 }
             } else {
                 System.out.println(serverName + ": User already registered");
@@ -124,7 +139,7 @@ class PasswordRestController {
         }
     }
 
-    private Password[] sortForMostRecentPassword(Password[] toSort) {
+    private Object[] sortForMostRecentPassword(Object[] toSort) {
         // Sort to get the most recent version
         Arrays.sort(toSort);
         return toSort;
@@ -135,8 +150,7 @@ class PasswordRestController {
         /* If there were more responses than the number of faults we tolerate, then we will proceed.
         *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
         */
-        // - 1 because I am always right
-        return countNotNull(retrieved) > (2.0 / 3.0) * n - 1.0 / 6.0 - 1;
+        return countNotNull(retrieved) > (2.0 / 3.0) * n - 1.0 / 6.0;
     }
 
     private int countNotNull(Object[] array) {

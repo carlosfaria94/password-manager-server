@@ -45,7 +45,6 @@ public class User {
                 ", fingerprint='" + fingerprint + '\'' +
                 ", signature='" + signature + '\'' +
                 ", publicKey='" + publicKey + '\'' +
-                ", passwords=" + passwords +
                 '}';
     }
 }

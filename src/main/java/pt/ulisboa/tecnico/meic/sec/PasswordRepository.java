@@ -10,4 +10,5 @@ public interface PasswordRepository extends JpaRepository<Password, Long> {
     Optional<Password> findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
             String fingerprint, String domain, String username, String versionNumber
     );
+    void deleteById(Integer id);
 }

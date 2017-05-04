@@ -79,40 +79,40 @@ class PasswordRestController {
                 input.username,
                 input.versionNumber);
 
-
         if (pwd.isPresent()) {
             System.out.println("Password already exists here!");
             return new ResponseEntity<>(pwd.get(), null, HttpStatus.CONFLICT);
         } else {
-            // #flood
-            Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
+            Optional<User> user = this.userRepository.findByFingerprint(fingerprint);
+            if (user.isPresent()) {
+                Password newPwd = passwordRepository.save(new Password(
+                        user.get(),
+                        input.domain,
+                        input.username,
+                        input.password,
+                        input.versionNumber,
+                        input.deviceId,
+                        input.pwdSignature,
+                        input.timestamp,
+                        input.nonce,
+                        input.reqSignature
+                ));
 
-            if (!enoughResponses(retrieved)) {
-                System.out.println(serverName + ": Not enough responses from other replicas");
-                return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
-            } else {
-                return this.userRepository.findByFingerprint(fingerprint).map(user -> {
+                System.out.println(serverName + ": New password registered. ID: " + newPwd.getId());
 
-                    Password newPwd = passwordRepository.save(new Password(
-                            user,
-                            input.domain,
-                            input.username,
-                            input.password,
-                            input.versionNumber,
-                            input.deviceId,
-                            input.pwdSignature,
-                            input.timestamp,
-                            input.nonce,
-                            input.reqSignature
-                    ));
+                // #floodAndBeCool
+                Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
 
-                    System.out.println("New password registered. ID: " + newPwd.getId());
-
-
+                if (!enoughResponses(retrieved)) {
+                    System.out.println(serverName + ": Not enough responses from other replicas");
+                    this.passwordRepository.deleteById(newPwd.getId());
+                    return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
+                } else {
                     return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
-
-                }).orElse(new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND));
-                // user does not exist
+                }
+            } else {
+                System.out.println(serverName + ": User already registered");
+                return new ResponseEntity<>(null, null, HttpStatus.UNAUTHORIZED);
             }
         }
     }

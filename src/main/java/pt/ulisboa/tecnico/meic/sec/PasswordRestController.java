@@ -73,47 +73,49 @@ class PasswordRestController {
 
         System.out.println(input);
 
-        Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
-                fingerprint,
-                input.domain,
-                input.username,
-                input.versionNumber);
+        synchronized (this) {
+            Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
+                    fingerprint,
+                    input.domain,
+                    input.username,
+                    input.versionNumber);
 
-        if(pwd.isPresent()) {
-            System.out.println("Password already exists here!");
-            return new ResponseEntity<>(pwd.get(), null, HttpStatus.CONFLICT);
-        } else {
-            // #flood
-            Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
-
-            if (!enoughResponses(retrieved)) {
-                System.out.println(serverName + ": Not enough responses from other replicas");
-                return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
+            if (pwd.isPresent()) {
+                System.out.println("Password already exists here!");
+                return new ResponseEntity<>(pwd.get(), null, HttpStatus.CONFLICT);
             } else {
-                return this.userRepository.findByFingerprint(fingerprint).map(user -> {
+                // #flood
+                Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
 
-                    Password newPwd = passwordRepository.save(new Password(
-                            user,
-                            input.domain,
-                            input.username,
-                            input.password,
-                            input.versionNumber,
-                            input.deviceId,
-                            input.pwdSignature,
-                            input.timestamp,
-                            input.nonce,
-                            input.reqSignature
-                    ));
+                if (!enoughResponses(retrieved)) {
+                    System.out.println(serverName + ": Not enough responses from other replicas");
+                    return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
+                } else {
+                    return this.userRepository.findByFingerprint(fingerprint).map(user -> {
 
-                    System.out.println("New password registered. ID: " + newPwd.getId());
+                        Password newPwd = passwordRepository.save(new Password(
+                                user,
+                                input.domain,
+                                input.username,
+                                input.password,
+                                input.versionNumber,
+                                input.deviceId,
+                                input.pwdSignature,
+                                input.timestamp,
+                                input.nonce,
+                                input.reqSignature
+                        ));
+
+                        System.out.println("New password registered. ID: " + newPwd.getId());
 
 
-                    return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
+                        return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
 
-                }).orElse(new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND)); // user does not exist
+                    }).orElse(new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND));
+                    // user does not exist
+                }
             }
         }
-
     }
 
     private boolean enoughResponses(Object[] retrieved) {

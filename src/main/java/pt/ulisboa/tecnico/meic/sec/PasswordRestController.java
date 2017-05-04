@@ -14,6 +14,7 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
+import java.util.Optional;
 
 @RestController
 class PasswordRestController {
@@ -65,7 +66,6 @@ class PasswordRestController {
         }
     }
 
-
     @RequestMapping(value = "/password", method = RequestMethod.PUT)
     ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException, IOException {
         String fingerprint = this.validateUser(input.publicKey);
@@ -73,19 +73,22 @@ class PasswordRestController {
 
         System.out.println(input);
 
-        if (!this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
+        Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
                 fingerprint,
                 input.domain,
                 input.username,
-                input.versionNumber).isPresent()) {
+                input.versionNumber);
 
-            // This replica do not have the password, let's replicate and save in this replica
-
+        if(pwd.isPresent()) {
+            System.out.println("Password already exists here!");
+            return new ResponseEntity<>(pwd.get(), null, HttpStatus.CONFLICT);
+        } else {
+            // #flood
             Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
 
             if (!enoughResponses(retrieved)) {
                 System.out.println(serverName + ": Not enough responses from other replicas");
-                return new ResponseEntity<>(null, null, HttpStatus.CONFLICT);
+                return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
             } else {
                 return this.userRepository.findByFingerprint(fingerprint).map(user -> {
 
@@ -104,21 +107,11 @@ class PasswordRestController {
 
                     System.out.println("New password registered. ID: " + newPwd.getId());
 
-                    Password p = null;
-                    try {
-                        p = sec.getPasswordReadyToSend(newPwd);
-                    } catch (NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException | KeyStoreException | InvalidKeyException e) {
-                        e.printStackTrace();
-                    }
 
-                    return new ResponseEntity<>(p, null, HttpStatus.CREATED);
+                    return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
 
-                }).orElse(new ResponseEntity<>(new Password(), null, HttpStatus.CONFLICT)); // PWD already exist
+                }).orElse(new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND)); // PWD already exist
             }
-
-        } else {
-            System.out.println(": Password already exist in this server: " + serverName);
-            return new ResponseEntity<>(new Password(), null, HttpStatus.CONFLICT);
         }
 
     }

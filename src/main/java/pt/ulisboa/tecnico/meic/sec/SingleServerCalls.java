@@ -3,6 +3,7 @@ package pt.ulisboa.tecnico.meic.sec;
 
 import com.google.gson.Gson;
 import okhttp3.*;
+import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
 
@@ -79,7 +80,14 @@ public class SingleServerCalls {
             //System.out.println("Password successful registered: " + newPassword.toString());
             return json.fromJson(response.body().string(), Password.class);
         } else {
-            //System.out.println("Password not registered. HTTP Code: " + response.code());
+            switch (response.code()) {
+                case 409:
+                    System.out.println("Replica already updated.");
+                    //return
+                    break;
+                default:
+                    break;
+            }
             return null;
         }
     }

@@ -51,21 +51,17 @@ class PasswordRestController {
                 input.username
         ));
 
-        System.out.println("BATATA");
         if (passwords.isEmpty()) {
             return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
         } else {
             Password maximum = passwords.get(0);
-            System.out.println("YEY");
             for (Password p : passwords) {
                 if (Long.valueOf(p.timestamp) >
                         Long.valueOf(maximum.timestamp)) {
                     maximum = p;
                 }
             }
-            System.out.println("UPS!");
             Password p = sec.getPasswordReadyToSendToClient(new Password(maximum));
-            System.out.println("RETRIEVING\n" + p);
             return new ResponseEntity<>(p, null, HttpStatus.OK);
         }
     }
@@ -75,7 +71,6 @@ class PasswordRestController {
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordInsertSignature(input);
 
-        System.out.println(input);
 
         Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
                 fingerprint,
@@ -128,7 +123,6 @@ class PasswordRestController {
         *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
         */
         // - 1 because I am always right
-        System.out.println(countNotNull(retrieved));
         return countNotNull(retrieved) > (2.0 / 3.0) * n - 1.0 / 6.0 - 1;
     }
 

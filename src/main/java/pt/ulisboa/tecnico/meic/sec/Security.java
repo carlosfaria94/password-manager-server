@@ -62,7 +62,6 @@ class Security {
         password.timestamp = String.valueOf(cryptoManager.getActualTimestamp().getTime());
         password.nonce = cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32));
         password.serverPublicKey = null;
-        System.out.println("Ta na hora!");
         String[] fieldsToSend = new String[]{
                 password.publicKey,
                 password.domain,
@@ -112,7 +111,6 @@ class Security {
 
     void verifyPasswordInsertSignature(Password password) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidPasswordSignatureException, InvalidRequestSignatureException {
         String[] myFields;
-        System.out.println(password.serverPublicKey);
         if (password.serverPublicKey == null) {
             myFields = new String[]{
                     password.publicKey,

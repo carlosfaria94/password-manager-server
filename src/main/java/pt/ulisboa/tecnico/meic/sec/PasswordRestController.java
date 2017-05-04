@@ -15,8 +15,9 @@ import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 @RestController
 class PasswordRestController {
@@ -29,6 +30,8 @@ class PasswordRestController {
     private final String serverName = System.getenv("SERVER_NAME");
     private ServerCallsPool call;
 
+    private ConcurrentHashMap<Password, WriteLock> locks;
+
     private Security sec;
 
     @Autowired
@@ -40,6 +43,7 @@ class PasswordRestController {
         keystorePwd = "batata";
         sec = new Security(keystorePath, keystorePwd.toCharArray());
         call = new ServerCallsPool();
+        locks = new ConcurrentHashMap<>();
     }
 
     @RequestMapping(value = "/retrievePassword", method = RequestMethod.POST)

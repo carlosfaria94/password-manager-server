@@ -35,6 +35,7 @@ class UserRestController {
      */
     @RequestMapping(method = RequestMethod.POST)
     ResponseEntity<?> registerUser(@RequestBody User input) throws ArrayIndexOutOfBoundsException, NoSuchAlgorithmException, NullPointerException, CertificateException, KeyStoreException, IOException, InvalidKeySpecException, SignatureException, InvalidKeyException {
+        System.out.println(input);
         try {
             Security sec = new Security("keystore-" + serverName + ".jceks", "batata".toCharArray()); //same as password controller
             String fingerprint = sec.generateFingerprint(input.publicKey);

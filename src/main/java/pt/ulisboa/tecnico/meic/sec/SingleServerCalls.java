@@ -74,6 +74,8 @@ public class SingleServerCalls {
                 .build();
         Response response = client.newCall(request).execute();
 
+        System.out.println(response.code());
+
         if (response.isSuccessful()) {
             //System.out.println("Password successful registered: " + newPassword.toString());
             return json.fromJson(response.body().string(), Password.class);

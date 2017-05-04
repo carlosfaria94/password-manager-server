@@ -110,7 +110,7 @@ class PasswordRestController {
 
                     return new ResponseEntity<>(newPwd, null, HttpStatus.CREATED);
 
-                }).orElse(new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND)); // PWD already exist
+                }).orElse(new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND)); // user does not exist
             }
         }
 
@@ -122,7 +122,7 @@ class PasswordRestController {
         *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
         */
         System.out.println(countNotNull(retrieved));
-        return countNotNull(retrieved) > (2.0 / 3.0) * n - 1.0 / 6.0;
+        return countNotNull(retrieved) > (2.0 / 3.0) * n - 1.0 / 6.0 - 1;
     }
 
     private int countNotNull(Object[] array) {

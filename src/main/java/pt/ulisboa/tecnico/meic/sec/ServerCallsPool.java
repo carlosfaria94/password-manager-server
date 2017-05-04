@@ -1,13 +1,15 @@
 package pt.ulisboa.tecnico.meic.sec;
 
+import javax.validation.constraints.DecimalMax;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class ServerCallsPool {
     private final String thisPort = System.getenv("SERVER_PORT");
     private int initialPort = 3001;
     private int finalPort = 3004;
 
-    private SingleServerCalls[] singleServerCalls;
+    private ArrayList<SingleServerCalls> singleServerCalls;
 
     public ServerCallsPool(int initialPort, int finalPort) {
         this.initialPort = initialPort;
@@ -25,26 +27,30 @@ public class ServerCallsPool {
     }
 
     public int size() {
-        return singleServerCalls.length;
+        return singleServerCalls.size();
     }
 
     private void init() {
-        singleServerCalls = new SingleServerCalls[finalPort - initialPort];
-        for (int i = 0; i < singleServerCalls.length; i++) {
-            if (initialPort + i == Integer.valueOf(thisPort)) continue;
-            singleServerCalls[i] = new SingleServerCalls(initialPort + i);
+        singleServerCalls = new ArrayList<>();
+        for (int i = initialPort; i <= finalPort; i++) {
+            System.out.println("PORT: " + i + " vs " + thisPort);
+            if (i == Integer.valueOf(thisPort)) {
+                System.out.println("Skipping " + i);
+            }else {
+                singleServerCalls.add(new SingleServerCalls(i));
+            }
         }
     }
 
     public User[] register(User user) throws IOException {
-        Thread[] threads = new Thread[singleServerCalls.length];
-        User[] usersResponses = new User[singleServerCalls.length];
+        Thread[] threads = new Thread[size()];
+        User[] usersResponses = new User[size()];
 
-        for (int i = 0; i < singleServerCalls.length || i < threads.length; i++) {
+        for (int i = 0; i < size() || i < threads.length; i++) {
             int finalI = i;
             threads[i] = new Thread(() -> {
                 try {
-                    usersResponses[finalI] = singleServerCalls[finalI].register(user);
+                    usersResponses[finalI] = singleServerCalls.get(finalI).register(user);
                 } catch (Exception ignored) {
                     // If a thread crashed, it's probably connection problems
                 }
@@ -64,15 +70,14 @@ public class ServerCallsPool {
         return usersResponses;
     }
 
-
     public Password[] putPassword(Password pwd) throws IOException {
-        Thread[] threads = new Thread[singleServerCalls.length];
-        Password[] passwordsResponse = new Password[singleServerCalls.length];
-        for (int i = 0; i < singleServerCalls.length || i < threads.length; i++) {
+        Thread[] threads = new Thread[size()];
+        Password[] passwordsResponse = new Password[size()];
+        for (int i = 0; i < size() || i < threads.length; i++) {
             int finalI = i;
             threads[i] = new Thread(() -> {
                 try {
-                    passwordsResponse[finalI] = singleServerCalls[finalI].putPassword(pwd);
+                    passwordsResponse[finalI] = singleServerCalls.get(finalI).putPassword(pwd);
                 } catch (Exception e) {
                     e.printStackTrace(System.out);
                     System.out.println(e.getMessage());
@@ -98,14 +103,15 @@ public class ServerCallsPool {
         return passwordsResponse;
     }
 
+
     public Password[] retrievePassword(Password pwd) throws IOException {
-        Thread[] threads = new Thread[singleServerCalls.length];
-        Password[] passwordsResponse = new Password[singleServerCalls.length];
-        for (int i = 0; i < singleServerCalls.length || i < threads.length; i++) {
+        Thread[] threads = new Thread[size()];
+        Password[] passwordsResponse = new Password[size()];
+        for (int i = 0; i < size() || i < threads.length; i++) {
             int finalI = i;
             threads[i] = new Thread(() -> {
                 try {
-                    passwordsResponse[finalI] = singleServerCalls[finalI].retrievePassword(pwd);
+                    passwordsResponse[finalI] = singleServerCalls.get(finalI).retrievePassword(pwd);
                 } catch (Exception ignored) {
                     // If a thread crashed, it's probably connection problems
                 }
@@ -126,7 +132,12 @@ public class ServerCallsPool {
     }
 
     //Mockup purpose
+    @Deprecated
     public void setSingleServerCalls(SingleServerCalls[] singleServerCalls) {
+        //this.singleServerCalls = singleServerCalls;
+    }
+
+    public void setSingleServerCalls(ArrayList<SingleServerCalls> singleServerCalls) {
         this.singleServerCalls = singleServerCalls;
     }
 }

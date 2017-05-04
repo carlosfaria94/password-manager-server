@@ -108,12 +108,12 @@ class PasswordRestController {
 
                 if (!enoughResponses(quorum)) {
                     System.out.println(serverName + ": Not enough responses from other replicas");
-                    this.passwordRepository.delete(newPwd.getId());
+                    this.passwordRepository.deleteById(newPwd.getId());
                     return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
                 } else {
                     Password[] sortedQuorum = sortForMostRecentPassword(quorum);
                     final Password selectedPassword = sortedQuorum[0];
-                    this.passwordRepository.delete(newPwd.getId());
+
                     Password _newPwd = this.passwordRepository.save(new Password(
                             user.get(),
                             selectedPassword.domain,

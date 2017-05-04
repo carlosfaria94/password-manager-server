@@ -104,16 +104,20 @@ class PasswordRestController {
 
                 // #floodAndBeCool
                 Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
-               // ArrayList<Password> list = new ArrayList<>(retrieved);
-                if (!enoughResponses(retrieved)) {
+
+                Password[] quorum = Arrays.copyOf(retrieved, retrieved.length + 1);
+                quorum[quorum.length - 1] = newPwd;
+
+                if (!enoughResponses(quorum)) {
                     System.out.println(serverName + ": Not enough responses from other replicas");
                     this.passwordRepository.deleteById(newPwd.getId());
                     return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
                 } else {
-
-                    sortForMostRecentPassword(retrieved);
-                    //sort e bla bla
-                    return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(newPwd), null, HttpStatus.CREATED);
+                    Password[] sortedQuorum = sortForMostRecentPassword(quorum);
+                    final Password selectedPassword = sortedQuorum[0];
+                    // replace pwd
+                    return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(
+                            new Password((selectedPassword))), null, HttpStatus.CREATED);
                 }
             } else {
                 System.out.println(serverName + ": User already registered");

@@ -3,8 +3,6 @@ package pt.ulisboa.tecnico.meic.sec;
 
 import com.google.gson.Gson;
 import okhttp3.*;
-import org.springframework.http.HttpStatus;
-
 import java.io.IOException;
 
 /**
@@ -82,9 +80,8 @@ public class SingleServerCalls {
         } else {
             switch (response.code()) {
                 case 409:
-                    System.out.println("Replica already updated.");
-                    //return
-                    break;
+                    System.out.println(apiBaseUrl + ": Target replica already updated.");
+                    return json.fromJson(response.body().string(), Password.class);
                 default:
                     break;
             }

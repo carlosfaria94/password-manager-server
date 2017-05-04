@@ -12,6 +12,7 @@ public interface PasswordRepository extends JpaRepository<Password, Long> {
             String fingerprint, String domain, String username, String versionNumber
     );
 
-    void deleteById(Integer id);
+    void delete(Integer id);
+
 
 }

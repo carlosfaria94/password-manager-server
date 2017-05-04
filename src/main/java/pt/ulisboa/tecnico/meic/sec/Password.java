@@ -3,9 +3,10 @@ package pt.ulisboa.tecnico.meic.sec;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
+import java.util.UUID;
 
 @Entity
-public class Password {
+public class Password implements Comparable{
 
     @Transient
     public String publicKey;
@@ -124,5 +125,18 @@ public class Password {
                 ", nonce='" + nonce + '\'' +
                 ", reqSignature='" + reqSignature + '\'' +
                 '}';
+    }
+
+
+    @Override
+    public int compareTo(Object o) {
+        if (o instanceof Password) {
+            Password other = (Password) o;
+            int comparison = Integer.valueOf(other.versionNumber)
+                    - Integer.valueOf(this.versionNumber);
+            if (comparison == 0) {
+                return UUID.fromString(other.deviceId).compareTo(UUID.fromString(this.deviceId));
+            } else return comparison;
+        } else throw new RuntimeException("Not a Password");
     }
 }

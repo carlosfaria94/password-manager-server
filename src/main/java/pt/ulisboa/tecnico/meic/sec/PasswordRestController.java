@@ -1,5 +1,6 @@
 package pt.ulisboa.tecnico.meic.sec;
 
+import com.sun.deploy.util.ArrayUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,10 +11,12 @@ import pt.ulisboa.tecnico.meic.sec.exception.InvalidPasswordSignatureException;
 import pt.ulisboa.tecnico.meic.sec.exception.InvalidRequestSignatureException;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Optional;
 
 @RestController
@@ -101,12 +104,14 @@ class PasswordRestController {
 
                 // #floodAndBeCool
                 Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
-
+               // ArrayList<Password> list = new ArrayList<>(retrieved);
                 if (!enoughResponses(retrieved)) {
                     System.out.println(serverName + ": Not enough responses from other replicas");
                     this.passwordRepository.deleteById(newPwd.getId());
                     return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
                 } else {
+
+                    sortForMostRecentPassword(retrieved);
                     //sort e bla bla
                     return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(newPwd), null, HttpStatus.CREATED);
                 }
@@ -115,6 +120,12 @@ class PasswordRestController {
                 return new ResponseEntity<>(null, null, HttpStatus.UNAUTHORIZED);
             }
         }
+    }
+
+    private Password[] sortForMostRecentPassword(Password[] toSort) {
+        // Sort to get the most recent version
+        Arrays.sort(toSort);
+        return toSort;
     }
 
     private boolean enoughResponses(Object[] retrieved) {

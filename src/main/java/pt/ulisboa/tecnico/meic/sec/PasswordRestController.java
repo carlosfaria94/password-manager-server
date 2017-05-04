@@ -113,19 +113,8 @@ class PasswordRestController {
                 } else {
                     Password[] sortedQuorum = sortForMostRecentPassword(quorum);
                     final Password selectedPassword = sortedQuorum[0];
-
-                    Password _newPwd = this.passwordRepository.save(new Password(
-                            user.get(),
-                            selectedPassword.domain,
-                            selectedPassword.username,
-                            selectedPassword.password,
-                            selectedPassword.versionNumber,
-                            selectedPassword.deviceId,
-                            selectedPassword.pwdSignature,
-                            selectedPassword.timestamp,
-                            selectedPassword.nonce,
-                            selectedPassword.reqSignature
-                    ));
+                    selectedPassword.setId(newPwd.getId());
+                    Password _newPwd = this.passwordRepository.save(selectedPassword);
                     return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(_newPwd), null, HttpStatus.CREATED);
                 }
             } else {

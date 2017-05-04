@@ -44,6 +44,7 @@ class Security {
                 password.username,
                 password.password,
                 password.versionNumber,
+                password.deviceId,
                 password.pwdSignature,
                 password.timestamp,
                 password.nonce,
@@ -85,9 +86,8 @@ class Security {
     }
 
     void verifyPasswordInsertSignature(Password password) throws NoSuchAlgorithmException, DuplicateRequestException, ExpiredTimestampException, InvalidKeySpecException, SignatureException, InvalidKeyException, InvalidPasswordSignatureException, InvalidRequestSignatureException {
-        PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey)));
         String[] myFields;
-
+        System.out.println(password.serverPublicKey);
         if (password.serverPublicKey == null) {
             myFields = new String[]{
                     password.publicKey,
@@ -100,6 +100,9 @@ class Security {
                     password.timestamp,
                     password.nonce
             };
+            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.publicKey)));
+            if (!cryptoManager.isValidSig(publicKey, myFields, password.reqSignature))
+                throw new InvalidRequestSignatureException();
         } else {
             myFields = new String[]{
                     password.serverPublicKey,
@@ -113,10 +116,10 @@ class Security {
                     password.timestamp,
                     password.nonce
             };
+            PublicKey serverPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(cryptoManager.convertBase64ToBinary(password.serverPublicKey)));
+            if (!cryptoManager.isValidSig(serverPublicKey, myFields, password.reqSignature))
+                throw new InvalidRequestSignatureException();
         }
-
-        if (!cryptoManager.isValidSig(publicKey, myFields, password.reqSignature))
-            throw new InvalidRequestSignatureException();
         verifyFreshness(password.nonce, password.timestamp);
     }
 

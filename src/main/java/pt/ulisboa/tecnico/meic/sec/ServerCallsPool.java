@@ -79,18 +79,15 @@ public class ServerCallsPool {
                 try {
                     passwordsResponse[finalI] = singleServerCalls.get(finalI).putPassword(pwd);
                 } catch (Exception e) {
-                    e.printStackTrace(System.out);
+                   // e.printStackTrace(System.out);
                     System.out.println(e.getMessage());
                     // If a thread crashed, it's probably connection problems
                 }
             });
         }
-        System.out.println("Montei as threads");
         for (Thread thread : threads) {
             thread.start();
         }
-        System.out.println("Comecei as threads");
-
         for (Thread thread : threads) {
             try {
                 thread.join();
@@ -98,8 +95,6 @@ public class ServerCallsPool {
                 e.printStackTrace(System.out);
             }
         }
-        System.out.println("acabou " + passwordsResponse[0]);
-
         return passwordsResponse;
     }
 

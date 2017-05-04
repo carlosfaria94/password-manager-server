@@ -79,10 +79,8 @@ class PasswordRestController {
                 input.username,
                 input.versionNumber);
 
-        System.out.println(pwd);
 
         if (pwd.isPresent()) {
-            System.out.println(pwd.get());
             System.out.println("Password already exists here!");
             return new ResponseEntity<>(pwd.get(), null, HttpStatus.CONFLICT);
         } else {

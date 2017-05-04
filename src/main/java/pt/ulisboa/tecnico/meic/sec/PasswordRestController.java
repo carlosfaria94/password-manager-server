@@ -73,41 +73,54 @@ class PasswordRestController {
 
         System.out.println(input);
 
-        Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
+        if (!this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
+                fingerprint,
+                input.domain,
+                input.username,
+                input.versionNumber).isPresent()) {
 
-        if (!enoughResponses(retrieved)) {
-            System.out.println("Not enough responses from other replicas");
-            return new ResponseEntity<>(null, null, HttpStatus.CONFLICT);
+            // This replica do not have the password, let's replicate and save in this replica
+
+            Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
+
+            if (!enoughResponses(retrieved)) {
+                System.out.println(serverName + ": Not enough responses from other replicas");
+                return new ResponseEntity<>(null, null, HttpStatus.CONFLICT);
+            } else {
+                return this.userRepository.findByFingerprint(fingerprint).map(user -> {
+
+                    Password newPwd = passwordRepository.save(new Password(
+                            user,
+                            input.domain,
+                            input.username,
+                            input.password,
+                            input.versionNumber,
+                            input.deviceId,
+                            input.pwdSignature,
+                            input.timestamp,
+                            input.nonce,
+                            input.reqSignature
+                    ));
+
+                    System.out.println("New password registered. ID: " + newPwd.getId());
+
+                    Password p = null;
+                    try {
+                        p = sec.getPasswordReadyToSend(newPwd);
+                    } catch (NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException | KeyStoreException | InvalidKeyException e) {
+                        e.printStackTrace();
+                    }
+
+                    return new ResponseEntity<>(p, null, HttpStatus.CREATED);
+
+                }).orElse(new ResponseEntity<>(new Password(), null, HttpStatus.CONFLICT)); // PWD already exist
+            }
+
         } else {
-            return this.userRepository.findByFingerprint(fingerprint).map(user -> {
-
-                Password newPwd = passwordRepository.save(new Password(
-                    user,
-                    input.domain,
-                    input.username,
-                    input.password,
-                    input.versionNumber,
-                    input.deviceId,
-                    input.pwdSignature,
-                    input.timestamp,
-                    input.nonce,
-                    input.reqSignature
-                ));
-
-                System.out.println("New password registered. ID: " + newPwd.getId());
-
-                Password p = null;
-                try {
-                    p = sec.getPasswordReadyToSend(newPwd);
-                } catch (NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException | KeyStoreException | InvalidKeyException e) {
-                    e.printStackTrace();
-                }
-
-                return new ResponseEntity<>(p, null, HttpStatus.CREATED);
-
-            }).orElse(new ResponseEntity<>(new Password(), null, HttpStatus.CONFLICT)); // PWD already exist
-
+            System.out.println(": Password already exist in this server: " + serverName);
+            return new ResponseEntity<>(new Password(), null, HttpStatus.CONFLICT);
         }
+
     }
 
     private boolean enoughResponses(Object[] retrieved) {

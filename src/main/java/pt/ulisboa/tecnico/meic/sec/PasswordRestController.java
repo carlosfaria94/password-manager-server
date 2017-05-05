@@ -1,5 +1,7 @@
 package pt.ulisboa.tecnico.meic.sec;
 
+import com.google.gson.Gson;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,11 +15,10 @@ import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.locks.ReentrantLock;
 
 @RestController
 class PasswordRestController {
@@ -29,8 +30,10 @@ class PasswordRestController {
     private final String keystorePwd;
     private final String serverName = System.getenv("SERVER_NAME");
     private ServerCallsPool call;
+    private Gson json = new Gson();
 
-    private ConcurrentHashMap<Password, WriteLock> locks;
+
+    private ConcurrentHashMap<Password, MutablePair<ReentrantLock, Long>> locks;
 
     private Security sec;
 
@@ -44,13 +47,14 @@ class PasswordRestController {
         sec = new Security(keystorePath, keystorePwd.toCharArray());
         call = new ServerCallsPool();
         locks = new ConcurrentHashMap<>();
+        new ClearLockTask();
     }
 
     @RequestMapping(value = "/retrievePassword", method = RequestMethod.POST)
     ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordFetchSignature(input);
-        System.out.println("Cenas##"+fingerprint+":"+input.domain+":"+input.username);
+        System.out.println("Cenas##" + fingerprint + ":" + input.domain + ":" + input.username);
         ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findTop10ByOrderById());
 
         System.out.println(passwords);
@@ -73,17 +77,50 @@ class PasswordRestController {
         }
     }
 
+
+    @RequestMapping(value = "/lock", method = RequestMethod.PUT)
+    ResponseEntity<?> lockPassword(@RequestBody Password input) throws NoSuchAlgorithmException, InvalidPasswordSignatureException, ExpiredTimestampException, InvalidKeyException, InvalidRequestSignatureException, DuplicateRequestException, SignatureException, InvalidKeySpecException, UnrecoverableKeyException, KeyStoreException, IOException {
+        sec.verifyPasswordInsertSignature(input);
+        synchronized (this) {
+            MutablePair<ReentrantLock, Long> pair = locks.get(input);
+
+            if(pair == null) { // pre prepare
+                locks.put(input, new MutablePair<>(new ReentrantLock(), -1l));
+                pair.setRight(System.currentTimeMillis());
+                pair.getLeft().lock();
+                return new ResponseEntity<Object>(
+                        sec.getPasswordReadyToSend(new Password(input)), null, HttpStatus.OK);
+
+            } else //already locked gg
+                return new ResponseEntity<>(null, null, HttpStatus.LOCKED);
+        }
+
+    }
+
+
     @RequestMapping(value = "/password", method = RequestMethod.PUT)
     ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException, IOException {
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordInsertSignature(input);
 
+        if (input.serverPublicKey == null) {
+            Password[] lock = call.lock(sec.getPasswordReadyToSend(new Password(input)));
+            Password passwordLock = json.fromJson(lockPassword(input).getBody().toString(), Password.class);
 
-        Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
-                fingerprint,
-                input.domain,
-                input.username,
-                input.versionNumber);
+            ArrayList<Password> la = new ArrayList<>(Arrays.asList(lock));
+            if(passwordLock != null) la.add(passwordLock);
+            if (!enoughResponses(la.toArray()))
+                return new ResponseEntity<Object>(null, null, HttpStatus.LOCKED);
+
+        }
+
+
+        //while (!locks.get(input).getLeft().isLocked())
+            Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
+                    fingerprint,
+                    input.domain,
+                    input.username,
+                    input.versionNumber);
 
         if (pwd.isPresent()) {
             System.out.println("Password already exists here!");
@@ -123,7 +160,7 @@ class PasswordRestController {
                     final Password selectedPassword = (Password) sortedQuorum[0];
                     selectedPassword.setId(newPwd.getId());
                     Password _newPwd = this.passwordRepository.save(selectedPassword);
-                    System.out.println("BATATA: "+ fingerprint+"##"+_newPwd.domain+"##" + _newPwd.username);
+                    System.out.println("BATATA: " + fingerprint + "##" + _newPwd.domain + "##" + _newPwd.username);
                     ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findByUserFingerprintAndDomainAndUsername(
                             fingerprint,
                             input.domain,
@@ -217,5 +254,23 @@ class PasswordRestController {
     @ExceptionHandler({NoSuchAlgorithmException.class})
     public void noAlgorithm() {
         System.err.println("Cryptographic algorithm is not available.");
+    }
+
+
+    private class ClearLockTask extends TimerTask {
+
+        public ClearLockTask() {
+            new Timer().schedule(this, ThreadLocalRandom.current().nextInt(5, 11) * 1000);
+        }
+
+        @Override
+        public void run() {
+            for (Password p : locks.keySet())
+                if (System.currentTimeMillis() - locks.get(p).getRight() > 1000 * 1000 * 60) {
+                    locks.get(p).getLeft().unlock();
+                    locks.remove(p);
+                }
+            new ClearLockTask();
+        }
     }
 }

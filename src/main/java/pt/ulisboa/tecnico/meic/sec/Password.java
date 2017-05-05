@@ -113,6 +113,28 @@ public class Password implements Comparable{
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Password)) return false;
+
+        Password password = (Password) o;
+
+        if (!publicKey.equals(password.publicKey)) return false;
+        if (!domain.equals(password.domain)) return false;
+        if (!username.equals(password.username)) return false;
+        return versionNumber.equals(password.versionNumber);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = publicKey.hashCode();
+        result = 31 * result + domain.hashCode();
+        result = 31 * result + username.hashCode();
+        result = 31 * result + versionNumber.hashCode();
+        return result;
+    }
+
+    @Override
     public String toString() {
         return "Password{" +
                 "user=" + user +

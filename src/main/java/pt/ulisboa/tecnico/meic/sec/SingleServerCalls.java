@@ -110,4 +110,42 @@ public class SingleServerCalls {
             return null;
         }
     }
+
+    public Password lockTry(Password pwd) throws IOException {
+
+        RequestBody body = RequestBody.create(JSON, json.toJson(pwd));
+        Request request = new Request.Builder()
+                .url(apiBaseUrl + "/lockTry")
+                .put(body)
+                .build();
+        Response response = client.newCall(request).execute();
+
+        System.out.println(response.code());
+
+        if (response.isSuccessful()) {
+            //System.out.println("Password successful registered: " + newPassword.toString());
+            return json.fromJson(response.body().string(), Password.class);
+        } else {
+            return null;
+        }
+    }
+
+    public Password lock(Password pwd) throws IOException {
+
+        RequestBody body = RequestBody.create(JSON, json.toJson(pwd));
+        Request request = new Request.Builder()
+                .url(apiBaseUrl + "/lock")
+                .put(body)
+                .build();
+        Response response = client.newCall(request).execute();
+
+        System.out.println(response.code());
+
+        if (response.isSuccessful()) {
+            //System.out.println("Password successful registered: " + newPassword.toString());
+            return json.fromJson(response.body().string(), Password.class);
+        } else {
+            return null;
+        }
+    }
 }

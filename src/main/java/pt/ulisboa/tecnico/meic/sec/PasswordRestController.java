@@ -1,7 +1,6 @@
 package pt.ulisboa.tecnico.meic.sec;
 
 import com.google.gson.Gson;
-import org.apache.commons.lang3.tuple.MutablePair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +17,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.locks.ReentrantLock;
 
 @RestController
 class PasswordRestController {
@@ -32,8 +30,7 @@ class PasswordRestController {
     private ServerCallsPool call;
     private Gson json = new Gson();
 
-
-    private ConcurrentHashMap<Password, MutablePair<ReentrantLock, Long>> locks;
+    private ConcurrentHashMap<Password, Transaction> transactions;
 
     private Security sec;
 
@@ -46,23 +43,17 @@ class PasswordRestController {
         keystorePwd = "batata";
         sec = new Security(keystorePath, keystorePwd.toCharArray());
         call = new ServerCallsPool();
-        locks = new ConcurrentHashMap<>();
-        new ClearLockTask();
+        transactions = new ConcurrentHashMap<>();
+        new ClearExpiredTransactions();
     }
 
     @RequestMapping(value = "/retrievePassword", method = RequestMethod.POST)
     ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordFetchSignature(input);
-        System.out.println("Cenas##" + fingerprint + ":" + input.domain + ":" + input.username);
         ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findTop10ByOrderById());
 
-        System.out.println(passwords);
-
-        System.out.println(this.passwordRepository.findAll());
-
         if (passwords.isEmpty()) {
-            System.out.println("Nao encontreu nada!");
             return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
         } else {
             Password maximum = passwords.get(0);
@@ -82,12 +73,15 @@ class PasswordRestController {
     ResponseEntity<?> lockPassword(@RequestBody Password input) throws NoSuchAlgorithmException, InvalidPasswordSignatureException, ExpiredTimestampException, InvalidKeyException, InvalidRequestSignatureException, DuplicateRequestException, SignatureException, InvalidKeySpecException, UnrecoverableKeyException, KeyStoreException, IOException {
         sec.verifyPasswordInsertSignature(input);
         synchronized (this) {
-            MutablePair<ReentrantLock, Long> pair = locks.get(input);
+            Transaction transaction = transactions.get(input);
 
-            if(pair == null) { // pre prepare
-                locks.put(input, new MutablePair<>(new ReentrantLock(), -1l));
-                pair.setRight(System.currentTimeMillis());
-                pair.getLeft().lock();
+            if(transaction == null || !transaction.isLocked()) { // pre prepare
+                if(transaction == null) {
+                    transactions.put(input, new Transaction(true));
+                }
+
+                //TODO BROADCAST LOCK
+
                 return new ResponseEntity<Object>(
                         sec.getPasswordReadyToSend(new Password(input)), null, HttpStatus.OK);
 
@@ -97,33 +91,126 @@ class PasswordRestController {
 
     }
 
-
     @RequestMapping(value = "/password", method = RequestMethod.PUT)
     ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException, IOException {
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordInsertSignature(input);
 
-        if (input.serverPublicKey == null) {
-            Password[] lock = call.lock(sec.getPasswordReadyToSend(new Password(input)));
-            Password passwordLock = json.fromJson(lockPassword(input).getBody().toString(), Password.class);
-
-            ArrayList<Password> la = new ArrayList<>(Arrays.asList(lock));
-            if(passwordLock != null) la.add(passwordLock);
-            if (!enoughResponses(la.toArray()))
-                return new ResponseEntity<Object>(null, null, HttpStatus.LOCKED);
-
+        Transaction transaction = transactions.get(input);
+        if(transaction != null && transaction.isLocked()){
+            //Resource is locked
+            return new ResponseEntity<>(null, null, HttpStatus.LOCKED);
         }
+        transactions.put(input, new Transaction());
+
+        call.lock(sec.getPasswordReadyToSend(new Password(input)));
+
+        //Wait for enough responses or transaction expires
+        while(!enoughResponses(transaction.getPasswords()) && !transaction.hasExpired());
+
+        //NO CONSENSUS
+        if(!enoughResponses(transaction.getPasswords()))
+            ;
 
 
         //while (!locks.get(input).getLeft().isLocked())
-            Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
-                    fingerprint,
-                    input.domain,
-                    input.username,
-                    input.versionNumber);
+        Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
+                fingerprint,
+                input.domain,
+                input.username,
+                input.versionNumber);
 
         if (pwd.isPresent()) {
-            System.out.println("Password already exists here!");
+            return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(pwd.get()), null, HttpStatus.CONFLICT);
+        } else {
+            Optional<User> user = this.userRepository.findByFingerprint(fingerprint);
+            if (user.isPresent()) {
+                Password newPwd = passwordRepository.save(new Password(
+                        user.get(),
+                        input.domain,
+                        input.username,
+                        input.password,
+                        input.versionNumber,
+                        input.deviceId,
+                        input.pwdSignature,
+                        input.timestamp,
+                        input.nonce,
+                        input.reqSignature
+                ));
+
+                System.out.println(serverName + ": New password registered. ID: " + newPwd.getId());
+
+                // #floodAndBeCool
+                Password[] retrieved = call.putPassword(sec.getPasswordReadyToSend(new Password(input)));
+
+                //for(Password p : retrieved) System.out.println(p);
+                ArrayList<Password> passwordList = new ArrayList<>(Arrays.asList(retrieved));
+                passwordList.add(newPwd);
+
+                //System.out.println(passwordList);
+                if (!enoughResponses(passwordList.toArray())) {
+                    System.out.println(serverName + ": Not enough responses from other replicas");
+                    this.passwordRepository.deleteById(newPwd.getId());
+                    return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
+                } else {
+                    Object[] sortedQuorum = sortForMostRecentPassword(passwordList.toArray());
+                    final Password selectedPassword = (Password) sortedQuorum[0];
+                    selectedPassword.setId(newPwd.getId());
+                    Password _newPwd = this.passwordRepository.save(selectedPassword);
+                    System.out.println("BATATA: " + fingerprint + "##" + _newPwd.domain + "##" + _newPwd.username);
+                    ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findByUserFingerprintAndDomainAndUsername(
+                            fingerprint,
+                            input.domain,
+                            input.username
+                    ));
+                    if (!passwords.isEmpty()) {
+                        System.out.println(passwords);
+                    }
+                    // System.out.println(serverName + ": New password really registered. ID: " + _newPwd.getId());
+                    return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(_newPwd)
+                            , null, HttpStatus.CREATED);
+                }
+            } else {
+                System.out.println(serverName + ": User already registered");
+                return new ResponseEntity<>(null, null, HttpStatus.UNAUTHORIZED);
+            }
+        }
+    }
+
+    //This is a replica's putPassword
+    @RequestMapping(value = "/commitPassword", method = RequestMethod.PUT)
+    ResponseEntity<?> commitPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException, IOException {
+        String fingerprint = this.validateUser(input.publicKey);
+        sec.verifyPasswordInsertSignature(input);
+
+        Transaction transaction = transactions.get(input);
+        /*if(transaction == null){
+            call.commit(null);
+        }*/
+
+        transaction.addPassword(input);
+
+        if(!transaction.markFirstCommit()){
+            //This is not a first commit call
+
+            return null;
+        }
+
+        //Wait for enough responses or transaction expires
+        while(!enoughResponses(transaction.getPasswords()) && !transaction.hasExpired());
+
+        //NO CONSENSUS
+        if(!enoughResponses(transaction.getPasswords()))
+            ;
+
+        //while (!locks.get(input).getLeft().isLocked())
+        Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
+                fingerprint,
+                input.domain,
+                input.username,
+                input.versionNumber);
+
+        if (pwd.isPresent()) {
             return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(pwd.get()), null, HttpStatus.CONFLICT);
         } else {
             Optional<User> user = this.userRepository.findByFingerprint(fingerprint);
@@ -257,20 +344,23 @@ class PasswordRestController {
     }
 
 
-    private class ClearLockTask extends TimerTask {
+    private class ClearExpiredTransactions extends TimerTask {
 
-        public ClearLockTask() {
+        public ClearExpiredTransactions() {
             new Timer().schedule(this, ThreadLocalRandom.current().nextInt(5, 11) * 1000);
         }
 
         @Override
         public void run() {
-            for (Password p : locks.keySet())
-                if (System.currentTimeMillis() - locks.get(p).getRight() > 1000 * 1000 * 60) {
-                    locks.get(p).getLeft().unlock();
-                    locks.remove(p);
+            for (Password p: transactions.keySet()) {
+                Transaction t = transactions.get(p);
+                //FIXME ??? TEMPO
+                if (t.hasExpired()) {
+                    t.unlock();
+                    transactions.put(p, null);
                 }
-            new ClearLockTask();
+            }
+            new ClearExpiredTransactions();
         }
     }
 }

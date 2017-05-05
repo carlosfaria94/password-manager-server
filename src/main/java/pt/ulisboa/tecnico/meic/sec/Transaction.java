@@ -1,74 +1,90 @@
 package pt.ulisboa.tecnico.meic.sec;
 
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Transaction {
-    private ArrayList<Password> passwords;
+    public static final int INIT_STATE = 0;
+    public static final int PREPREPARE_STATE = 1;
+    public static final int PREPARE_STATE = 2;
+    public static final int COMMIT_STATE = 3;
+
+    private ArrayList<Password> prepare;
+    private ArrayList<Password> commits;
     private long timestamp;
-    private ReentrantLock lock;
-    private ReentrantLock markFirstCommit;
-    private AtomicBoolean isCommited;
+
+    private AtomicInteger state;
 
     public Transaction(){
-        passwords = new ArrayList<>();
+        state = new AtomicInteger(INIT_STATE);
+        prepare = new ArrayList<>();
+        commits = new ArrayList<>();
         timestamp = System.currentTimeMillis();
-        lock = new ReentrantLock();
-        markFirstCommit = new ReentrantLock();
-        isCommited = new AtomicBoolean(false);
     }
 
-    public Transaction(boolean lock){
-        this();
-        if(lock) lock();
+    public synchronized boolean setPrePrepareState() {
+        if (state.compareAndSet(INIT_STATE, PREPREPARE_STATE)){
+            restartTimer();
+            return true;
+        }
+        return false;
     }
 
-    public synchronized boolean isCommited(){
-        return isCommited.get();
+    public synchronized boolean setPrepareState() {
+        if (state.compareAndSet(PREPREPARE_STATE, PREPARE_STATE)){
+            restartTimer();
+            return true;
+        }
+        return false;
     }
 
-    public synchronized void setCommited(){
-        isCommited.set(true);
+    public synchronized boolean setCommitState() {
+        if (state.compareAndSet(PREPARE_STATE, COMMIT_STATE)){
+            restartTimer();
+            return true;
+        }
+        return false;
     }
 
-    public synchronized boolean markFirstCommit(){
-        return markFirstCommit.tryLock();
+    public synchronized int getState(){
+        return state.get();
     }
 
-    public synchronized Password[] getPasswords() {
-        return passwords.toArray(new Password[passwords.size()]);
+    public synchronized Password[] getPrepareAns() {
+        return prepare.toArray(new Password[prepare.size()]);
+    }
+
+    public synchronized Password[] getCommitsAns() {
+        return commits.toArray(new Password[commits.size()]);
     }
 
     public synchronized boolean hasExpired(){
         return System.currentTimeMillis() - timestamp > 1000*60;
     }
 
-    public synchronized boolean hasServerResponded(String serverPublicKey){
-        for(Password p: passwords){
-            if(p.serverPublicKey.equals(serverPublicKey))
-                return true;
+    public synchronized boolean addPrepare(Password password){
+        if(!hasServerResponse(prepare, password)) {
+            prepare.add(password);
+            return true;
+        }
+        return false;
+    }
+    public synchronized boolean addCommit(Password password){
+        if(!hasServerResponse(commits, password)) {
+            commits.add(password);
+            return true;
         }
         return false;
     }
 
-    public synchronized boolean isLocked(){
-        return lock.isLocked();
+    public synchronized boolean hasServerResponse(ArrayList<Password> array, Password password){
+        for(Password p: array){
+            if(p.serverPublicKey.equals(password.serverPublicKey)) return true;
+        }
+        return false;
     }
 
-    public synchronized boolean tryLock(){
-        return lock.tryLock();
-    }
-
-    public synchronized void lock(){
-        lock.lock();
-    }
-
-    public synchronized void unlock(){
-        lock.unlock();
-    }
-
-    public synchronized void addPassword(Password password){
-        passwords.add(password);
+    private synchronized void restartTimer(){
+        timestamp = System.currentTimeMillis();
     }
 }

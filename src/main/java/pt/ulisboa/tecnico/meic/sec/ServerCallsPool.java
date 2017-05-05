@@ -125,15 +125,70 @@ public class ServerCallsPool {
         return passwordsResponse;
     }
 
-
-    public Password[] lock(Password pwd)  {
+    public Password[] prePrepare(Password pwd)  {
         Thread[] threads = new Thread[size()];
         Password[] passwordsResponse = new Password[size()];
         for (int i = 0; i < size() || i < threads.length; i++) {
             int finalI = i;
             threads[i] = new Thread(() -> {
                 try {
-                    passwordsResponse[finalI] = singleServerCalls.get(finalI).lock(pwd);
+                    passwordsResponse[finalI] = singleServerCalls.get(finalI).prePrepare(pwd);
+                } catch (Exception e) {
+                    // e.printStackTrace(System.out);
+                    System.out.println(e.getMessage());
+                    // If a thread crashed, it's probably connection problems
+                }
+            });
+        }
+        for (Thread thread : threads) {
+            thread.start();
+        }
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace(System.out);
+            }
+        }
+        return passwordsResponse;
+    }
+
+    public Password[] prepare(Password pwd)  {
+        Thread[] threads = new Thread[size()];
+        Password[] passwordsResponse = new Password[size()];
+        for (int i = 0; i < size() || i < threads.length; i++) {
+            int finalI = i;
+            threads[i] = new Thread(() -> {
+                try {
+                    passwordsResponse[finalI] = singleServerCalls.get(finalI).prepare(pwd);
+                } catch (Exception e) {
+                    // e.printStackTrace(System.out);
+                    System.out.println(e.getMessage());
+                    // If a thread crashed, it's probably connection problems
+                }
+            });
+        }
+        for (Thread thread : threads) {
+            thread.start();
+        }
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace(System.out);
+            }
+        }
+        return passwordsResponse;
+    }
+
+    public Password[] commit(Password pwd)  {
+        Thread[] threads = new Thread[size()];
+        Password[] passwordsResponse = new Password[size()];
+        for (int i = 0; i < size() || i < threads.length; i++) {
+            int finalI = i;
+            threads[i] = new Thread(() -> {
+                try {
+                    passwordsResponse[finalI] = singleServerCalls.get(finalI).commit(pwd);
                 } catch (Exception e) {
                     // e.printStackTrace(System.out);
                     System.out.println(e.getMessage());

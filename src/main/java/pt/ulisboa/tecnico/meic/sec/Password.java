@@ -43,6 +43,7 @@ public class Password implements Comparable{
         this.password = another.password;
         this.pwdSignature = another.pwdSignature;
         this.deviceId = another.deviceId;
+        this.iv = another.iv;
         this.versionNumber = another.versionNumber;
         this.timestamp = another.timestamp;
         this.nonce = another.nonce;

@@ -111,11 +111,11 @@ public class SingleServerCalls {
         }
     }
 
-    public Password lockTry(Password pwd) throws IOException {
+    public Password prePrepare(Password pwd) throws IOException {
 
         RequestBody body = RequestBody.create(JSON, json.toJson(pwd));
         Request request = new Request.Builder()
-                .url(apiBaseUrl + "/lockTry")
+                .url(apiBaseUrl + "/prePrepare")
                 .put(body)
                 .build();
         Response response = client.newCall(request).execute();
@@ -130,11 +130,30 @@ public class SingleServerCalls {
         }
     }
 
-    public Password lock(Password pwd) throws IOException {
+    public Password prepare(Password pwd) throws IOException {
 
         RequestBody body = RequestBody.create(JSON, json.toJson(pwd));
         Request request = new Request.Builder()
-                .url(apiBaseUrl + "/lock")
+                .url(apiBaseUrl + "/prepare")
+                .put(body)
+                .build();
+        Response response = client.newCall(request).execute();
+
+        System.out.println(response.code());
+
+        if (response.isSuccessful()) {
+            //System.out.println("Password successful registered: " + newPassword.toString());
+            return json.fromJson(response.body().string(), Password.class);
+        } else {
+            return null;
+        }
+    }
+
+    public Password commit(Password pwd) throws IOException {
+
+        RequestBody body = RequestBody.create(JSON, json.toJson(pwd));
+        Request request = new Request.Builder()
+                .url(apiBaseUrl + "/commit")
                 .put(body)
                 .build();
         Response response = client.newCall(request).execute();

@@ -68,52 +68,42 @@ class PasswordRestController {
         }
     }
 
-
-    @RequestMapping(value = "/lock", method = RequestMethod.PUT)
-    ResponseEntity<?> lockPassword(@RequestBody Password input) throws NoSuchAlgorithmException, InvalidPasswordSignatureException, ExpiredTimestampException, InvalidKeyException, InvalidRequestSignatureException, DuplicateRequestException, SignatureException, InvalidKeySpecException, UnrecoverableKeyException, KeyStoreException, IOException {
-        sec.verifyPasswordInsertSignature(input);
-        synchronized (this) {
-            Transaction transaction = transactions.get(input);
-
-            if(transaction == null || !transaction.isLocked()) { // pre prepare
-                if(transaction == null) {
-                    transactions.put(input, new Transaction(true));
-                }
-
-                //TODO BROADCAST LOCK
-
-                return new ResponseEntity<Object>(
-                        sec.getPasswordReadyToSend(new Password(input)), null, HttpStatus.OK);
-
-            } else //already locked gg
-                return new ResponseEntity<>(null, null, HttpStatus.LOCKED);
-        }
-
-    }
-
     @RequestMapping(value = "/password", method = RequestMethod.PUT)
     ResponseEntity<?> addPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException, IOException {
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordInsertSignature(input);
 
         Transaction transaction = transactions.get(input);
-        if(transaction != null && transaction.isLocked()){
+        if(transaction != null && transaction.getState() != Transaction.INIT_STATE){
             //Resource is locked
             return new ResponseEntity<>(null, null, HttpStatus.LOCKED);
         }
-        transactions.put(input, new Transaction());
 
-        call.lock(sec.getPasswordReadyToSend(new Password(input)));
+        transaction = new Transaction();
+        transaction.setPrePrepareState();
+
+        call.prePrepare(sec.getPasswordReadyToSend(new Password(input)));
+
+        transaction.setPrepareState();
+        transactions.put(input, transaction);
+
 
         //Wait for enough responses or transaction expires
-        while(!enoughResponses(transaction.getPasswords()) && !transaction.hasExpired());
+        while(!enoughResponses(transaction.getPrepareAns(), 1) && !transaction.hasExpired());
 
         //NO CONSENSUS
-        if(!enoughResponses(transaction.getPasswords()))
-            ;
+        if(!enoughResponses(transaction.getPrepareAns(), 1))
+            return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
 
+        call.commit(sec.getPasswordReadyToSend(new Password(input)));
 
-        //while (!locks.get(input).getLeft().isLocked())
+        //Wait for enough responses or transaction expires
+        while(!enoughResponses(transaction.getCommitsAns(), 1) && !transaction.hasExpired());
+
+        //NO CONSENSUS
+        if(!enoughResponses(transaction.getCommitsAns(), 1))
+            return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
+
         Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
                 fingerprint,
                 input.domain,
@@ -177,33 +167,80 @@ class PasswordRestController {
         }
     }
 
+
+    @RequestMapping(value = "/prePrepare", method = RequestMethod.PUT)
+    ResponseEntity<?> prePrepare(@RequestBody Password input) throws NoSuchAlgorithmException, InvalidPasswordSignatureException, ExpiredTimestampException, InvalidKeyException, InvalidRequestSignatureException, DuplicateRequestException, SignatureException, InvalidKeySpecException, UnrecoverableKeyException, KeyStoreException, IOException {
+        sec.verifyPasswordInsertSignature(input);
+        synchronized (this) {
+            Transaction transaction = transactions.get(input);
+
+            if(transaction == null || transaction.getState() != Transaction.INIT_STATE) // pre prepare verify
+                return new ResponseEntity<>(null, null, HttpStatus.LOCKED);
+
+            //not first time calling prePrepare, we'll answer ok, bc we're locked
+            if(!transaction.setPrePrepareState()){
+                return new ResponseEntity<>(null, null, HttpStatus.OK);
+            }
+
+            call.prepare(sec.getPasswordReadyToSend(input));
+            return new ResponseEntity<Object>(null, null, HttpStatus.OK);
+        }
+    }
+
+    @RequestMapping(value = "/prepare", method = RequestMethod.PUT)
+    ResponseEntity<?> prepare(@RequestBody Password input) throws NoSuchAlgorithmException, InvalidPasswordSignatureException, ExpiredTimestampException, InvalidKeyException, InvalidRequestSignatureException, DuplicateRequestException, SignatureException, InvalidKeySpecException, UnrecoverableKeyException, KeyStoreException, IOException {
+        sec.verifyPasswordInsertSignature(input);
+        synchronized (this) {
+            Transaction transaction = transactions.get(input);
+
+            if(transaction == null || transaction.getState() < Transaction.PREPREPARE_STATE)
+                return new ResponseEntity<>(null, null, HttpStatus.LOCKED);
+
+            transaction.addPrepare(input);
+
+            Password toSend = sec.getPasswordReadyToSend(input);
+
+            //já foi chamado
+            if(!transaction.setPrepareState())
+                return new ResponseEntity<Object>(toSend, null, HttpStatus.OK);
+
+            //Wait for enough responses or transaction expires
+            while(!enoughResponses(transaction.getPrepareAns(), 1) && !transaction.hasExpired());
+
+            //NO CONSENSUS
+            if(!enoughResponses(transaction.getPrepareAns(), 1))
+                return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
+
+            call.commit(toSend);
+            return new ResponseEntity<Object>(toSend, null, HttpStatus.OK);
+        }
+    }
+
     //This is a replica's putPassword
-    @RequestMapping(value = "/commitPassword", method = RequestMethod.PUT)
-    ResponseEntity<?> commitPassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException, IOException {
+    @RequestMapping(value = "/commit", method = RequestMethod.PUT)
+    ResponseEntity<?> commit(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException, IOException {
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordInsertSignature(input);
 
         Transaction transaction = transactions.get(input);
-        /*if(transaction == null){
-            call.commit(null);
-        }*/
 
-        transaction.addPassword(input);
+        if(transaction == null || transaction.getState() < Transaction.PREPARE_STATE)
+            return new ResponseEntity<>(null, null, HttpStatus.LOCKED);
 
-        if(!transaction.markFirstCommit()){
-            //This is not a first commit call
+        transaction.addCommit(input);
+        Password toSend = sec.getPasswordReadyToSend(input);
 
-            return null;
-        }
+        //já foi chamado
+        if(!transaction.setPrepareState())
+            return new ResponseEntity<Object>(toSend, null, HttpStatus.OK);
 
         //Wait for enough responses or transaction expires
-        while(!enoughResponses(transaction.getPasswords()) && !transaction.hasExpired());
+        while(!enoughResponses(transaction.getCommitsAns(), 1) && !transaction.hasExpired());
 
         //NO CONSENSUS
-        if(!enoughResponses(transaction.getPasswords()))
-            ;
+        if(!enoughResponses(transaction.getCommitsAns(), 1))
+            return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
 
-        //while (!locks.get(input).getLeft().isLocked())
         Optional<Password> pwd = this.passwordRepository.findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
                 fingerprint,
                 input.domain,
@@ -281,6 +318,14 @@ class PasswordRestController {
         return countNotNull(retrieved) > (2.0 / 3.0) * n - 1.0 / 6.0;
     }
 
+    private boolean enoughResponses(Object[] retrieved, int ignored) {
+        int n = call.size();
+        /* If there were more responses than the number of faults we tolerate, then we will proceed.
+        *  The expression (2.0 / 3.0) * n - 1.0 / 6.0) is N = 3f + 1 solved in order to F
+        */
+        return countNotNull(retrieved) > (2.0 / 3.0) * n - 1.0 / 6.0 - ignored;
+    }
+
     private int countNotNull(Object[] array) {
         int count = 0;
         for (Object o : array) if (o != null) count++;
@@ -356,7 +401,6 @@ class PasswordRestController {
                 Transaction t = transactions.get(p);
                 //FIXME ??? TEMPO
                 if (t.hasExpired()) {
-                    t.unlock();
                     transactions.put(p, null);
                 }
             }

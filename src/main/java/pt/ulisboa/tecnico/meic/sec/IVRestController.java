@@ -40,7 +40,6 @@ class IVRestController {
     @RequestMapping(value = "/retrieveIv", method = RequestMethod.POST)
     ResponseEntity<?> retrieveIv(@RequestBody IV input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
-        sec.verifyIVFetchSignature(input);
 
         Optional<IV> iv = this.ivRepository.findByUserFingerprintAndHash(
                 fingerprint,
@@ -48,6 +47,7 @@ class IVRestController {
         );
         if (iv.isPresent()) {
             IV _iv = sec.getIVReadyToSend(iv.get());
+            System.out.println(_iv);
             return new ResponseEntity<>(_iv, null, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
@@ -58,7 +58,6 @@ class IVRestController {
     @RequestMapping(value = "/iv", method = RequestMethod.PUT)
     ResponseEntity<?> addIV(@RequestBody IV input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
-        sec.verifyIVInsertSignature(input);
 
         System.out.println(input);
 
@@ -100,15 +99,7 @@ class IVRestController {
             IV _iv = null;
             try {
                 _iv = sec.getIVReadyToSend(newIV);
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            } catch (UnrecoverableKeyException e) {
-                e.printStackTrace();
-            } catch (SignatureException e) {
-                e.printStackTrace();
-            } catch (KeyStoreException e) {
-                e.printStackTrace();
-            } catch (InvalidKeyException e) {
+            } catch (NoSuchAlgorithmException | UnrecoverableKeyException | SignatureException | KeyStoreException | InvalidKeyException e) {
                 e.printStackTrace();
             }
 

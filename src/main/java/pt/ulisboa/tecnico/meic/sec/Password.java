@@ -20,6 +20,7 @@ public class Password implements Comparable{
     public String pwdSignature;
     public String deviceId;
     public String versionNumber;
+    @Transient
     public String timestamp;
     @Transient
     public String nonce;

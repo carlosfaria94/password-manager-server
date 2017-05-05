@@ -15,7 +15,7 @@ import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 
 @RestController
@@ -46,25 +46,23 @@ class PasswordRestController {
     ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
         sec.verifyPasswordFetchSignature(input);
-        System.out.println("Cenas##"+fingerprint+":"+input.domain+":"+input.username);
-        ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findTop10ByOrderById());
 
-        System.out.println(passwords);
-
-        System.out.println(this.passwordRepository.findAll());
+        ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findByUserFingerprintAndDomainAndUsername(
+                fingerprint,
+                input.domain,
+                input.username
+        ));
 
         if (passwords.isEmpty()) {
-            System.out.println("Nao encontreu nada!");
             return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
         } else {
-            Password maximum = passwords.get(0);
+            Password pwdMaxVersion = passwords.get(0);
             for (Password p : passwords) {
-                if (Long.valueOf(p.timestamp) >
-                        Long.valueOf(maximum.timestamp)) {
-                    maximum = p;
+                if(Integer.valueOf(p.versionNumber) > Long.valueOf(pwdMaxVersion.versionNumber)) {
+                    pwdMaxVersion = p;
                 }
             }
-            Password p = sec.getPasswordReadyToSendToClient(new Password(maximum));
+            Password p = sec.getPasswordReadyToSendToClient(pwdMaxVersion);
             return new ResponseEntity<>(p, null, HttpStatus.OK);
         }
     }
@@ -117,17 +115,14 @@ class PasswordRestController {
                 } else {
                     Object[] sortedQuorum = sortForMostRecentPassword(passwordList.toArray());
                     final Password selectedPassword = (Password) sortedQuorum[0];
+
                     selectedPassword.setId(newPwd.getId());
+
+                    this.passwordRepository.deleteById(selectedPassword.getId());
                     Password _newPwd = this.passwordRepository.save(selectedPassword);
+
                     System.out.println("BATATA: "+ fingerprint+"##"+_newPwd.domain+"##" + _newPwd.username);
-                    ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findByUserFingerprintAndDomainAndUsername(
-                            fingerprint,
-                            input.domain,
-                            input.username
-                    ));
-                    if (!passwords.isEmpty()) {
-                        System.out.println(passwords);
-                    }
+
                     // System.out.println(serverName + ": New password really registered. ID: " + _newPwd.getId());
                     return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(_newPwd)
                             , null, HttpStatus.CREATED);

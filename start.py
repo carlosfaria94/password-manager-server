@@ -13,12 +13,12 @@ keystores = []
 DEFAULT_PORT = 3001
 command = "mvn spring-boot:run -Dmaven.test.skip"
 
-def start_replica(server_name, port):
+def start_replica(server_name, port, mode):
 	tag = "[" + server_name + ":" + port + "] "
 	
 	fi = open(os.path.join("logs", server_name+".out"), "w")
 	
-	p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True, env=dict(os.environ, SERVER_NAME=server_name, SERVER_PORT=port))
+	p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True, env=dict(os.environ, SERVER_NAME=server_name, SERVER_PORT=port, BAD=mode))
 	for line in p.stdout:
 		fi.write(line)
 		fi.flush()
@@ -65,11 +65,14 @@ def main():
 	if not os.path.exists("logs"):
 		os.makedirs("logs")
 	
-	for i in range(number_faults*3+1):
-		t = multiprocessing.Process(target=start_replica, args=("server_" + str(i), str(DEFAULT_PORT+i)))
+	for i in range(number_faults*3):
+		t = multiprocessing.Process(target=start_replica, args=("server_" + str(i), str(DEFAULT_PORT+i), "false"))
 		threads.append(t)
 		t.start()
-	
+
+	t = multiprocessing.Process(target=start_replica, args=("server_" + str(i + 1), str(DEFAULT_PORT + i + 1), "true"))
+	threads.append(t)
+	t.start()
 	print("Press RETURN to terminate the replicas")
 	input()
 	

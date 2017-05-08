@@ -6,6 +6,7 @@ import pt.ulisboa.tecnico.meic.sec.exception.InvalidPasswordSignatureException;
 import pt.ulisboa.tecnico.meic.sec.exception.InvalidRequestSignatureException;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.CertificateException;
@@ -62,6 +63,13 @@ class Security {
         password.timestamp = String.valueOf(cryptoManager.getActualTimestamp().getTime());
         password.nonce = cryptoManager.convertBinaryToBase64(cryptoManager.generateNonce(32));
         password.serverPublicKey = null;
+
+        if(System.getenv("BAD").equalsIgnoreCase("true")){ // Byzantine server
+            byte[] pwdBytes = cryptoManager.convertBase64ToBinary(password.password);
+            pwdBytes[new SecureRandom().nextInt(pwdBytes.length)] = 0x0;
+            password.password = cryptoManager.convertBinaryToBase64(pwdBytes);
+        }
+
         String[] fieldsToSend = new String[]{
                 password.publicKey,
                 password.domain,

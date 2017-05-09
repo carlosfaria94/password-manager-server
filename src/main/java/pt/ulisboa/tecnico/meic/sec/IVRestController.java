@@ -47,7 +47,6 @@ class IVRestController {
         );
         if (iv.isPresent()) {
             IV _iv = sec.getIVReadyToSend(iv.get());
-            System.out.println(_iv);
             return new ResponseEntity<>(_iv, null, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
@@ -58,8 +57,6 @@ class IVRestController {
     @RequestMapping(value = "/iv", method = RequestMethod.PUT)
     ResponseEntity<?> addIV(@RequestBody IV input) throws NoSuchAlgorithmException, NullPointerException, ExpiredTimestampException, DuplicateRequestException, InvalidPasswordSignatureException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
         String fingerprint = this.validateUser(input.publicKey);
-
-        System.out.println(input);
 
         return this.userRepository.findByFingerprint(fingerprint).map(user -> {
             IV newIV = null;
@@ -74,7 +71,7 @@ class IVRestController {
                     input.hash
             );
             if (iv.isPresent()) {
-                System.out.println("IV já existe, será substituída");
+                //System.out.println("IV já existe, será substituída");
 
                 ivRepository.delete(iv.get());
 
@@ -84,7 +81,7 @@ class IVRestController {
                         input.value
                 ));
 
-                System.out.println("IV updated. ID: " + newIV.getId());
+                //System.out.println("IV updated. ID: " + newIV.getId());
 
             } else {
                 newIV = ivRepository.save(new IV(
@@ -93,7 +90,7 @@ class IVRestController {
                         input.value
                 ));
 
-                System.out.println("New IV registered. ID: " + newIV.getId());
+                //System.out.println("New IV registered. ID: " + newIV.getId());
             }
 
             IV _iv = null;

@@ -15,7 +15,6 @@ import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Optional;
 
 @RestController
@@ -44,27 +43,35 @@ class PasswordRestController {
 
     @RequestMapping(value = "/retrievePassword", method = RequestMethod.POST)
     ResponseEntity<?> retrievePassword(@RequestBody Password input) throws NoSuchAlgorithmException, NullPointerException, InvalidPasswordSignatureException, ExpiredTimestampException, DuplicateRequestException, InvalidKeySpecException, InvalidRequestSignatureException, InvalidKeyException, SignatureException, UnrecoverableKeyException, KeyStoreException {
-        String fingerprint = this.validateUser(input.publicKey);
-        sec.verifyPasswordFetchSignature(input);
+        try {
+            String fingerprint = this.validateUser(input.publicKey);
+            sec.verifyPasswordFetchSignature(input);
 
-        ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findByUserFingerprintAndDomainAndUsername(
-                fingerprint,
-                input.domain,
-                input.username
-        ));
+            ArrayList<Password> passwords = new ArrayList<>(this.passwordRepository.findByUserFingerprintAndDomainAndUsername(
+                    fingerprint,
+                    input.domain,
+                    input.username
+            ));
 
-        if (passwords.isEmpty()) {
-            return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
-        } else {
-            Password pwdMaxVersion = passwords.get(0);
-            for (Password p : passwords) {
-                if(Integer.valueOf(p.versionNumber) > Long.valueOf(pwdMaxVersion.versionNumber)) {
-                    pwdMaxVersion = p;
+            if (passwords.isEmpty()) {
+                System.out.println("passwords is empty");
+                return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
+            } else {
+                Password pwdMaxVersion = passwords.get(0);
+                for (Password p : passwords) {
+                    if(Integer.valueOf(p.versionNumber) > Long.valueOf(pwdMaxVersion.versionNumber)) {
+                        pwdMaxVersion = p;
+                    }
                 }
+                System.out.println(pwdMaxVersion);
+                Password p = sec.getPasswordReadyToSendToClient(pwdMaxVersion);
+                return new ResponseEntity<>(p, null, HttpStatus.OK);
             }
-            Password p = sec.getPasswordReadyToSendToClient(pwdMaxVersion);
-            return new ResponseEntity<>(p, null, HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
         }
+
     }
 
     @RequestMapping(value = "/password", method = RequestMethod.PUT)
@@ -80,7 +87,7 @@ class PasswordRestController {
                 input.versionNumber);
 
         if (pwd.isPresent()) {
-            System.out.println("Password already exists here!");
+            //System.out.println("Password already exists here!");
             return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(pwd.get()), null, HttpStatus.CONFLICT);
         } else {
             Optional<User> user = this.userRepository.findByFingerprint(fingerprint);
@@ -121,7 +128,7 @@ class PasswordRestController {
                     this.passwordRepository.deleteById(selectedPassword.getId());
                     Password _newPwd = this.passwordRepository.save(selectedPassword);
 
-                    System.out.println("BATATA: "+ fingerprint+"##"+_newPwd.domain+"##" + _newPwd.username);
+                    //System.out.println("BATATA: "+ fingerprint+"##"+_newPwd.domain+"##" + _newPwd.username);
 
                     // System.out.println(serverName + ": New password really registered. ID: " + _newPwd.getId());
                     return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(_newPwd)

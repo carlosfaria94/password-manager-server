@@ -57,13 +57,14 @@ class PasswordRestController {
                 System.out.println("passwords is empty");
                 return new ResponseEntity<>(null, null, HttpStatus.NOT_FOUND);
             } else {
+                System.out.println("passwords is not empty");
                 Password pwdMaxVersion = passwords.get(0);
                 for (Password p : passwords) {
                     if(Integer.valueOf(p.versionNumber) > Long.valueOf(pwdMaxVersion.versionNumber)) {
                         pwdMaxVersion = p;
                     }
                 }
-                System.out.println(pwdMaxVersion);
+                System.out.println("pwd max version" + pwdMaxVersion);
                 Password p = sec.getPasswordReadyToSendToClient(pwdMaxVersion);
                 return new ResponseEntity<>(p, null, HttpStatus.OK);
             }
@@ -117,7 +118,7 @@ class PasswordRestController {
                 //System.out.println(passwordList);
                 if (!enoughResponses(passwordList.toArray())) {
                     System.out.println(serverName + ": Not enough responses from other replicas");
-                    this.passwordRepository.deleteById(newPwd.getId());
+                    this.passwordRepository.delete(newPwd);
                     return new ResponseEntity<>(null, null, HttpStatus.NOT_ACCEPTABLE);
                 } else {
                     Object[] sortedQuorum = sortForMostRecentPassword(passwordList.toArray());
@@ -125,14 +126,15 @@ class PasswordRestController {
 
                     selectedPassword.setId(newPwd.getId());
 
-                    this.passwordRepository.deleteById(selectedPassword.getId());
+                    //this.passwordRepository.deleteById(selectedPassword.getId());
                     Password _newPwd = this.passwordRepository.save(selectedPassword);
+
+                    System.out.println("Password to return to the client " + _newPwd.getId());
 
                     //System.out.println("BATATA: "+ fingerprint+"##"+_newPwd.domain+"##" + _newPwd.username);
 
                     // System.out.println(serverName + ": New password really registered. ID: " + _newPwd.getId());
-                    return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(_newPwd)
-                            , null, HttpStatus.CREATED);
+                    return new ResponseEntity<>(sec.getPasswordReadyToSendToClient(_newPwd), null, HttpStatus.CREATED);
                 }
             } else {
                 System.out.println(serverName + ": User already registered");

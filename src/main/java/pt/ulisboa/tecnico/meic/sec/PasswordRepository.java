@@ -5,7 +5,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 
 public interface PasswordRepository extends JpaRepository<Password, Long> {
@@ -17,11 +16,11 @@ public interface PasswordRepository extends JpaRepository<Password, Long> {
                                               @Param("username") String username);
 
     Optional<Password> findByUserFingerprintAndDomainAndUsernameAndVersionNumber(
-            String fingerprint, String domain, String username, String versionNumber
+            String fingerprint,
+            String domain,
+            String username,
+            String versionNumber
     );
 
     void deleteById(Integer id);
-
-    List<Password> findTop10ByOrderById();
-    List<Password> findAll();
 }

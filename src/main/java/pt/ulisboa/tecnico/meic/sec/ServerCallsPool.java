@@ -32,9 +32,7 @@ public class ServerCallsPool {
     private void init() {
         singleServerCalls = new ArrayList<>();
         for (int i = initialPort; i <= finalPort; i++) {
-            System.out.println("PORT: " + i + " vs " + thisPort);
             if (i == Integer.valueOf(thisPort)) {
-                System.out.println("Skipping " + i);
             } else {
                 singleServerCalls.add(new SingleServerCalls(i));
             }

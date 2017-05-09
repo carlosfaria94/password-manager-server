@@ -67,7 +67,6 @@ public class SingleServerCalls {
      * @throws IOException - when remote server fails to respond
      */
     public Password putPassword(Password pwd) throws IOException {
-        //System.out.println(pwd);
         RequestBody body = RequestBody.create(JSON, json.toJson(pwd));
         Request request = new Request.Builder()
                 .url(apiBaseUrl + "/password")

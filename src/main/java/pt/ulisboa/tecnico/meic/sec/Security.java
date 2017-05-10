@@ -64,7 +64,10 @@ class Security {
         password.serverPublicKey = null;
 
         String badVar = System.getenv("BAD");
-        if(badVar != null && badVar.equalsIgnoreCase("true")){ // Byzantine server
+        String serverName = System.getenv("SERVER_NAME");
+
+        if(badVar != null && serverName.equals("server3") && badVar.equalsIgnoreCase("true")){ // Byzantine server
+            System.out.println("I am a byzantine server... :O ");
             byte[] pwdBytes = cryptoManager.convertBase64ToBinary(password.password);
             pwdBytes[new SecureRandom().nextInt(pwdBytes.length)] = 0x0;
             password.password = cryptoManager.convertBinaryToBase64(pwdBytes);

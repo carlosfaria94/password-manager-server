@@ -22,5 +22,6 @@ public interface PasswordRepository extends JpaRepository<Password, Long> {
             String versionNumber
     );
 
-    void deleteById(Integer id);
+    @Query(value = "DELETE FROM Password p WHERE p.id = :id")
+    void deletePasswordById(@Param("id") Integer id);
 }
